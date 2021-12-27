@@ -6,4 +6,3 @@ rewrite.go
 *.t#
 tsharp
 *.py
-tsharp.go
