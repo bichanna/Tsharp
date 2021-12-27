@@ -664,6 +664,14 @@ func VisitExprFuncCall(expr Expr, VariableScope *FunVariableScope) (Expr, bool, 
 	} else {
 		for _, VisitedFun := range(FunScope) {
 			if VisitedFun.AsFunDef.Name == expr.AsFunCall.Name {
+				if len(VisitedFun.AsFunDef.Args) != len(expr.AsFunCall.Args) {
+					if len(VisitedFun.AsFunDef.Args) > len(expr.AsFunCall.Args) {
+						fmt.Println(fmt.Sprintf("Error: not enough arguments to call function %s()", expr.AsFunCall.Name))
+					} else {
+						fmt.Println(fmt.Sprintf("Error: too many arguments to call function %s()", expr.AsFunCall.Name))
+					}
+					os.Exit(0)
+				}
 				VariableScopeMap := map[string]Expr{}
 				FunVariableScopeInit := FunVariableScope{
 					Scope: VariableScopeMap,
@@ -857,15 +865,6 @@ func VisitExprCompare(expr Expr, VariableScope *FunVariableScope) (Expr) {
 func VisitExprs(expr Expr, RetBool bool, VariableScope *FunVariableScope) (Expr, bool, *FunVariableScope) {
 	switch expr.Type {
 		case ExprFunCall:
-			/*if expr.AsFunCall.Name == "print" || expr.AsFunCall.Name == "exit" {
-				//fmt.Println("ExprFunCallPrint")
-				RetExpr, _, VariableScope := VisitExprFuncCall(expr, VariableScope)
-				return RetExpr, RetBool, VariableScope
-			} else {
-				//fmt.Println("ExprFunCall")
-				RetExpr, _, VariableScope := VisitExprFuncCall(expr, VariableScope)
-				return RetExpr, RetBool, VariableScope
-			}*/
 			RetExpr, _, VariableScope := VisitExprFuncCall(expr, VariableScope)
 			return RetExpr, RetBool, VariableScope
 		case ExprVardef:
