@@ -3,6 +3,5 @@ main.exe
 rewrite
 rewrite.exe
 rewrite.go
-*.t#
 tsharp
 *.py
