@@ -34,6 +34,11 @@ const (
 	TOKEN_IS_EQUALS
 	TOKEN_NONE
 	TOKEN_ELSE
+	TOKEN_LESS_THAN
+	TOKEN_GREATER_THAN
+	TOKEN_LESS_EQUALS
+	TOKEN_GREATER_EQUALS
+	TOKEN_NOT_EQUALS
 )
 
 var tokens = []string {
@@ -56,6 +61,11 @@ var tokens = []string {
 	TOKEN_IS_EQUALS:      "TOKEN_IS_EQUALS",
 	TOKEN_NONE:           "TOKEN_NONE",
 	TOKEN_ELSE:           "TOKEN_ELSE",
+	TOKEN_LESS_THAN:      "TOKEN_LESS_THAN",
+	TOKEN_GREATER_THAN:   "TOKEN_GREATER_THAN",
+	TOKEN_LESS_EQUALS:    "TOKEN_LESS_EQUALS",
+	TOKEN_GREATER_EQUALS: "TOKEN_GREATER_EQUALS",
+	TOKEN_NOT_EQUALS:     "TOKEN_NOT_EQUALS",
 }
 
 func (token Token) String() string {
@@ -92,15 +102,15 @@ func (lexer *Lexer) Lex() (Position, Token, string) {
 		lexer.pos.column++
 		switch r {
 			case '\n': lexer.resetPosition()
-			case '(': return lexer.pos, TOKEN_L_PAREN, "("
-			case ')': return lexer.pos, TOKEN_R_PAREN, ")"
-			case ',': return lexer.pos, TOKEN_COMMA, ","
-			case '*': return lexer.pos, TOKEN_MUL, "*"
-			case '/': return lexer.pos, TOKEN_DIV, "/"
-			case '+': return lexer.pos, TOKEN_PLUS, "+"
-			case '-': return lexer.pos, TOKEN_MINUS, "-"
-			case '{': return lexer.pos, TOKEN_DO,    "{"
-			case '}': return lexer.pos, TOKEN_END,    "}"
+			case '(': return lexer.pos, TOKEN_L_PAREN,      "("
+			case ')': return lexer.pos, TOKEN_R_PAREN,      ")"
+			case ',': return lexer.pos, TOKEN_COMMA,        ","
+			case '*': return lexer.pos, TOKEN_MUL,          "*"
+			case '/': return lexer.pos, TOKEN_DIV,          "/"
+			case '+': return lexer.pos, TOKEN_PLUS,         "+"
+			case '-': return lexer.pos, TOKEN_MINUS,        "-"
+			case '{': return lexer.pos, TOKEN_DO,           "{"
+			case '}': return lexer.pos, TOKEN_END,          "}"
 			default:
 				if unicode.IsSpace(r) {
 					continue
@@ -120,6 +130,34 @@ func (lexer *Lexer) Lex() (Position, Token, string) {
 						return lexer.pos, TOKEN_IS_EQUALS, "=="
 					} else {
 						return lexer.pos, TOKEN_EQUALS, "="
+					}
+				} else if r == '!' {
+					r, _, err := lexer.reader.ReadRune()
+					if err != nil {panic(err)}
+					lexer.pos.column++
+					if r == '=' {
+						return lexer.pos, TOKEN_NOT_EQUALS, "!="
+					} else {
+						fmt.Println("Error:")
+						os.Exit(0)
+					}
+				} else if r == '<' {
+					r, _, err := lexer.reader.ReadRune()
+					if err != nil {panic(err)}
+					lexer.pos.column++
+					if r == '=' {
+						return lexer.pos, TOKEN_LESS_EQUALS, "<="
+					} else {
+						return lexer.pos, TOKEN_LESS_THAN, "<"
+					}
+				} else if r == '>' {
+					r, _, err := lexer.reader.ReadRune()
+					if err != nil {panic(err)}
+					lexer.pos.column++
+					if r == '=' {
+						return lexer.pos, TOKEN_GREATER_EQUALS, ">="
+					} else {
+						return lexer.pos, TOKEN_GREATER_THAN, ">"
 					}
 				} else if unicode.IsDigit(r) {
 					startPos := lexer.pos
@@ -568,7 +606,7 @@ func ParserParseTerm(parser *Parser) (Expr) {
 		}
 		ExprLeft = expr
 	}
-	if parser.CurrentTokenType == TOKEN_IS_EQUALS {
+	if parser.CurrentTokenType == TOKEN_IS_EQUALS || parser.CurrentTokenType == TOKEN_LESS_THAN || parser.CurrentTokenType == TOKEN_GREATER_THAN || parser.CurrentTokenType == TOKEN_GREATER_EQUALS || parser.CurrentTokenType == TOKEN_LESS_EQUALS || parser.CurrentTokenType == TOKEN_NOT_EQUALS {
 		op := int(parser.CurrentTokenType)
 		parser.ParserEat(parser.CurrentTokenType)
 		CompareExpr := Expr{}
@@ -847,14 +885,54 @@ func VisitExprCompare(expr Expr, VariableScope *FunVariableScope) (Expr) {
 		}
 	}
 	var Value bool
-	if VisitedLeft.Type != VisitedRight.Type {
-		Value = false
-	} else if VisitedLeft.Type == ExprStr {
-		Value = VisitedLeft.AsStr == VisitedRight.AsStr
-	} else if VisitedLeft.Type == ExprInt {
-		Value = VisitedLeft.AsInt == VisitedRight.AsInt
-	} else if VisitedLeft.Type == ExprNone {
-		Value = true
+	if expr.AsCompare.Op == TOKEN_IS_EQUALS {
+		if VisitedLeft.Type != VisitedRight.Type {
+			Value = false
+		} else if VisitedLeft.Type == ExprStr {
+			Value = VisitedLeft.AsStr == VisitedRight.AsStr
+		} else if VisitedLeft.Type == ExprInt {
+			Value = VisitedLeft.AsInt == VisitedRight.AsInt
+		} else if VisitedLeft.Type == ExprNone {
+			Value = true
+		}
+	} else if expr.AsCompare.Op == TOKEN_NOT_EQUALS {
+		if VisitedLeft.Type != VisitedRight.Type {
+			Value = true
+		} else if VisitedLeft.Type == ExprStr {
+			Value = VisitedLeft.AsStr != VisitedRight.AsStr
+		} else if VisitedLeft.Type == ExprInt {
+			Value = VisitedLeft.AsInt != VisitedRight.AsInt
+		} else if VisitedLeft.Type == ExprNone {
+			Value = false
+		}
+	} else if expr.AsCompare.Op == TOKEN_LESS_THAN {
+		if VisitedLeft.Type == ExprInt && VisitedRight.Type == ExprInt {
+			Value = VisitedLeft.AsInt < VisitedRight.AsInt
+		} else {
+			fmt.Println("Error: '<' expected type <int>")
+			os.Exit(0)
+		}
+	} else if expr.AsCompare.Op == TOKEN_GREATER_THAN {
+		if VisitedLeft.Type == ExprInt && VisitedRight.Type == ExprInt {
+			Value = VisitedLeft.AsInt > VisitedRight.AsInt
+		} else {
+			fmt.Println("Error: '>' expected type <int>")
+			os.Exit(0)
+		}
+	} else if expr.AsCompare.Op == TOKEN_GREATER_EQUALS {
+		if VisitedLeft.Type == ExprInt && VisitedRight.Type == ExprInt {
+			Value = VisitedLeft.AsInt >= VisitedRight.AsInt
+		} else {
+			fmt.Println("Error: '>=' expected type <int>")
+			os.Exit(0)
+		}
+	} else if expr.AsCompare.Op == TOKEN_LESS_EQUALS {
+		if VisitedLeft.Type == ExprInt && VisitedRight.Type == ExprInt {
+			Value = VisitedLeft.AsInt <= VisitedRight.AsInt
+		} else {
+			fmt.Println("Error: '<=' expected type <int>")
+			os.Exit(0)
+		}
 	}
 	BoolExpr := Expr{}
 	BoolExpr.Type = ExprBool
