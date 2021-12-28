@@ -5,3 +5,4 @@ rewrite.exe
 rewrite.go
 tsharp
 *.py
+backup.go
