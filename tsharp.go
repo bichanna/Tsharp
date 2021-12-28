@@ -727,16 +727,12 @@ func VisitExprFuncCall(expr Expr, VariableScope *FunVariableScope) (Expr, bool, 
 						} else {
 							expr.AsFunCall.Args[i] = VisitedIf
 						}
-					}/* else if expr.AsFunCall.Args[i].Type == ExprVar {
-						VisitedVar, _, _ := VisitExprs(expr.AsFunCall.Args[i], false, VariableScope)
-						expr.AsFunCall.Args[i] = VisitedVar
-					}*/
+					}
 					VarExpr.AsVardef = &Vardef {
 						Name: VisitedFun.AsFunDef.Args[i].AsVar,
 						Value: expr.AsFunCall.Args[i],
 					}
 					
-					//VisitExprs(VarExpr, false, &FunVariableScopeInit)
 					VisitExprVardefFunArg(VarExpr, &FunVariableScopeInit, VariableScope)
 				}
 				RetExpr, RetBool, _ := Exprs(VisitedFun.AsFunDef.Body, &FunVariableScopeInit)
@@ -946,42 +942,28 @@ func VisitExprs(expr Expr, RetBool bool, VariableScope *FunVariableScope) (Expr,
 			RetExpr, _, VariableScope := VisitExprFuncCall(expr, VariableScope)
 			return RetExpr, RetBool, VariableScope
 		case ExprVardef:
-			//fmt.Println("ExprVardef")
 			VisitExprVardef(expr, VariableScope)
 		case ExprStr:
-			//fmt.Println("ExprStr")
 			return expr, RetBool, VariableScope
 		case ExprInt:
-			//fmt.Println("ExprInt")
 			return expr, RetBool, VariableScope
 		case ExprBool:
-			//fmt.Println("ExprBool")
 			return expr, RetBool, VariableScope
 		case ExprNone:
-			//fmt.Println("ExprNone")
 			return expr, RetBool, VariableScope
 		case ExprVar:
-			//fmt.Println("ExprVar")
 			return VisitExprVar(expr, VariableScope), RetBool, VariableScope
 		case ExprReturn:
-			//fmt.Println("ExprReturn")
 			return VisitExprs(expr.AsReturn.Value, true, VariableScope)
 		case ExprFunDef:
-			//fmt.Println("ExprFunDef")
 			VisitExprFunDef(expr)
 		case ExprIf:
-			//fmt.Println("ExprIf")
 			RetExpr, RetBoolIf, VariableScope := VisitExprIf(expr, VariableScope)
 			return RetExpr, RetBoolIf, VariableScope
 		case ExprBinop:
-			//fmt.Println("ExprBinop")
 			return VisitExprBinop(expr, VariableScope), RetBool, VariableScope
 		case ExprCompare:
-			//fmt.Println("ExprCompare")
 			return VisitExprCompare(expr, VariableScope), RetBool, VariableScope
-		default:
-			//fmt.Println("Error: Expr not found.")
-			os.Exit(0)
 	}
 	return expr, RetBool, VariableScope
 }
@@ -991,8 +973,6 @@ func Exprs(exprs []Expr, VariableScope *FunVariableScope) (Expr, bool, *FunVaria
 	var RetBool bool
 	for _, expr := range exprs {
 		RetExpr, RetBool, VariableScope = VisitExprs(expr, false, VariableScope)
-		/*fmt.Print("Bool Value: ")
-		fmt.Println(RetBool)*/
 		if RetBool {
 			break
 		}
