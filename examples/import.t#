@@ -1,4 +1,0 @@
-import "examples/main.t#"
-
-"this program will import examples/main.t#" print
-

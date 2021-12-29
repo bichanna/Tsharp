@@ -1,6 +1,0 @@
-
-block Main do
-	"Hello World from block main" print
-end
-
-call Main
