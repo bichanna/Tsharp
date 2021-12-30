@@ -1303,7 +1303,7 @@ var BlockScope = map[string][]Expr{}
 
 func OpBlockdef(expr Expr) {
 	if _, ok := BlockScope[expr.AsBlockdef.Name]; ok {
-		fmt.Println("Error: block '%s' is already defined", expr.AsBlockdef.Name)
+		fmt.Println(fmt.Sprintf("Error: block '%s' is already defined", expr.AsBlockdef.Name))
 		os.Exit(0)
 	}
 	BlockScope[expr.AsBlockdef.Name] = expr.AsBlockdef.Body
