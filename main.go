@@ -124,7 +124,6 @@ func (lexer *Lexer) Lex() (Position, Token, string) {
 					continue
 				} else if r == '=' {
 					r, _, err := lexer.reader.ReadRune()
-					if r == '\n' {break}
 					if err != nil {
 						panic(err)
 					}
@@ -176,7 +175,6 @@ func (lexer *Lexer) Lex() (Position, Token, string) {
 					}
 				} else if r == '!' {
 					r, _, err := lexer.reader.ReadRune()
-					if r == '\n' {break}
 					if err != nil {panic(err)}
 					lexer.pos.column++
 					if r == '=' {
