@@ -20,9 +20,13 @@ syntax region tsharpCommentLine start="//" end="$"   contains=tsharpTodos
 syntax region tsharpString start=/\v"/ skip=/\v\\./ end=/\v"/
 syntax region tsharpString start=/\v'/ skip=/\v\\./ end=/\v'/
 
+" Numbers
+syntax match tsharpNumbers '\d\+'
+
 " Set highlights
 highlight default link tsharpKeywords Identifier
 highlight default link tsharpCommentLine Comment
 highlight default link tsharpString String
+highlight default link tsharpNumbers Number
 
 let b:current_syntax = "tsharp"
