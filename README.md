@@ -33,11 +33,11 @@ go build main.go
 
 > Run
 ```
-$ ./main <filename>.t#
+$ ./main <filename>.tsp
 
 or
 
-$ ./main.exe <filename>.t#
+$ ./main.exe <filename>.tsp
 ```
 
 ### Hello World
