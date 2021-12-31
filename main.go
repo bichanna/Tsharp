@@ -330,7 +330,7 @@ const (
 	ExprDup
 	ExprDrop
 	ExprExit
-	ExprFor	
+	ExprFor
 	ExprBinop // + - * / %
 	ExprCompare // < > == !=
 	ExprVardef
@@ -1080,7 +1080,7 @@ func OpLen() {
 		fmt.Println("TypeError: 'len' expected type <list>")
 		os.Exit(0)
 	}
-	
+
 	IntExpr := Expr{}
 	IntExpr.Type = ExprInt
 	IntExpr.AsInt = float64(len(visitedExpr.AsArr))
