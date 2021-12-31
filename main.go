@@ -46,6 +46,7 @@ const (
 	TOKEN_R_BRACKET
 	TOKEN_DOT
 	TOKEN_COMMA
+	TOKEN_ERROR
 )
 
 var tokens = []string{
@@ -75,6 +76,7 @@ var tokens = []string{
 	TOKEN_R_BRACKET:      "TOKEN_R_BRACKET",
 	TOKEN_DOT:            "TOKEN_DOT",
 	TOKEN_COMMA:          "TOKEN_COMMA",
+	TOKEN_ERROR:          "TOKEN_ERROR",
 }
 
 func (token Token) String() string {
@@ -203,12 +205,14 @@ func (lexer *Lexer) Lex() (Position, Token, string) {
 						return startPos, TOKEN_DO, val
 					} else if val == "true" || val == "false" {
 						return startPos, TOKEN_BOOL, val
-					} else if val == "string" || val == "int" || val == "bool" || val == "type" /*|| val == "list"*/ {
+					} else if val == "string" || val == "int" || val == "bool" || val == "type" || val == "list" || val == "error" {
 						return startPos, TOKEN_TYPE, val
 					} else if val == "else" {
 						return startPos, TOKEN_ELSE, val
 					} else if val == "elif" {
 						return startPos, TOKEN_ELIF, val
+					} else if val == "NameError" || val == "StackEmpty" {
+						return startPos, TOKEN_ERROR, val
 					}
 					return startPos, TOKEN_ID, val
 				} else if r == '"' {
@@ -303,6 +307,7 @@ const (
 	ExprInt
 	ExprStr
 	ExprId
+	ExprError
 	ExprArr
 	ExprAppend
 	ExprReplace
@@ -341,6 +346,7 @@ type Expr struct {
 	AsInt float64
 	AsStr string
 	AsId *Id
+	AsError string
 	AsArr []Expr
 	AsType string
 	AsPush *Push
@@ -467,6 +473,10 @@ func ParserParseExpr(parser *Parser) (Expr) {
 			parser.ParserEat(TOKEN_L_BRACKET)
 			expr.Type = ExprArr
 			parser.ParserEat(TOKEN_R_BRACKET)
+		case TOKEN_ERROR:
+			expr.Type = ExprError
+			expr.AsError = parser.current_token_value
+			parser.ParserEat(TOKEN_ERROR)
 		default:
 			fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value '%s'", parser.line, parser.column, parser.current_token_value))
 			os.Exit(0)
@@ -747,7 +757,7 @@ func ParserParse(parser *Parser)  ([]Expr) {
 			}
 			parser.ParserEat(TOKEN_ID)
 			exprs = append(exprs, expr)
-		} else if parser.current_token_type == TOKEN_INT || parser.current_token_type == TOKEN_STRING || parser.current_token_type == TOKEN_L_BRACKET || parser.current_token_type == TOKEN_TYPE || parser.current_token_type == TOKEN_BOOL {
+		} else if parser.current_token_type == TOKEN_INT || parser.current_token_type == TOKEN_STRING || parser.current_token_type == TOKEN_L_BRACKET || parser.current_token_type == TOKEN_TYPE || parser.current_token_type == TOKEN_BOOL || parser.current_token_type == TOKEN_ERROR {
 			expr.Type = ExprPush
 			expr.AsPush = &Push{
 				Arg: ParserParseExpr(parser),
@@ -886,6 +896,7 @@ func PrintArray(visitedExpr Expr) {
 			case ExprStr: fmt.Print(fmt.Sprintf("'%s'", visitedExpr.AsArr[i].AsStr))
 			case ExprTypeType: fmt.Print(visitedExpr.AsArr[i].AsType)
 			case ExprBool: fmt.Print(visitedExpr.AsArr[i].AsBool)
+			case ExprError: fmt.Print(fmt.Sprintf("<Error '%s'>",visitedExpr.AsError))
 			case ExprArr: PrintArray(visitedExpr.AsArr[i])
 		}
 	}
@@ -904,6 +915,7 @@ func OpPuts() {
 		case ExprStr: fmt.Print(visitedExpr.AsStr)
 		case ExprBool: fmt.Print(visitedExpr.AsBool)
 		case ExprTypeType: fmt.Print(fmt.Sprintf("<%s>",visitedExpr.AsType))
+		case ExprError: fmt.Print(fmt.Sprintf("<Error '%s'>",visitedExpr.AsError))
 		case ExprArr: PrintArray(visitedExpr)
 	}
 	OpDrop()
@@ -923,6 +935,7 @@ func OpPrintS() {
 			case ExprStr: fmt.Print(visitedExpr.AsStr)
 			case ExprBool: fmt.Print(visitedExpr.AsBool)
 			case ExprTypeType: fmt.Print(fmt.Sprintf("<%s>",visitedExpr.AsType))
+			case ExprError: fmt.Print(fmt.Sprintf("<Error '%s'>",visitedExpr.AsError))
 			case ExprArr: PrintArray(visitedExpr)
 		}
 		fmt.Print(" ")
@@ -938,6 +951,7 @@ func OpPrintV() {
 			case ExprStr: fmt.Print(value.AsStr)
 			case ExprBool: fmt.Print(value.AsBool)
 			case ExprTypeType: fmt.Print(fmt.Sprintf("<%s>",value.AsType))
+			case ExprError: fmt.Print(fmt.Sprintf("<Error '%s'>",value.AsError))
 			case ExprArr: PrintArray(value)
 		}
 		fmt.Println()
@@ -975,6 +989,8 @@ func OpTypeOf() {
 		type_value = "type"
 	} else if  visitedExpr.Type == ExprArr {
 		type_value = "list"
+	} else if  visitedExpr.Type == ExprError {
+		type_value = "error"
 	}
 	TypeExpr.AsType = type_value
 	OpPush(TypeExpr)
