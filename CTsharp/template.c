@@ -81,8 +81,8 @@ int main(int argc, char* argv[])
 {
     STACK_T* stack = init_stack();
     EXPR_T* expr   = init_expr();
-    // stack_push(expr);
-    // stack_drop();
+    // stack_push(stack, expr);
+    // stack_drop(stack);
     // clean_up();
 }
 
