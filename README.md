@@ -20,6 +20,9 @@ It's like Forth and Porth, but written in Go.
 <a href="https://en.wikipedia.org/wiki/Stack-oriented_programming">Stack-oriented programming</a>
 
 ### TODO
+- [ ] Compile to C
+- [ ] Compile to 32bit assembly
+- [ ] Compile to 64bit assembly
 - [ ] Self-hosted
 
 ### Install
