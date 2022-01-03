@@ -103,6 +103,21 @@ for true do
 end
 ```
 
+## Error handling
+```python
+
+# errors
+# StackOutRange
+# TypeError
+# ImportError
+
+try 
+    dup
+except StackOutRange do
+    "Error" print
+end
+```
+
 ## Arithmetic
 ```pascal
 34 35 + print
