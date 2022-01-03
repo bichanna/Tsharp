@@ -21,8 +21,10 @@ $ ./main.exe examples/main.tsp
 
 * [Hello World](#hello-world)
 * [Comments](#comments)
-
-
+* [Block](#block)
+* [If Statement](#if-statement)
+* [For loop](#for-loop)
+* [Error handling](#error-handling)
 </td><td width=33% valign=top>
 
 
