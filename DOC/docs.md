@@ -22,16 +22,20 @@ $ ./main.exe examples/main.tsp
 * [Hello World](#hello-world)
 * [Comments](#comments)
 * [Block](#block)
+* [Arithmetic](#arithmetic)
 * [If Statement](#if-statement)
 * [For loop](#for-loop)
 * [Error handling](#error-handling)
+* [Import](#import)
+
 </td><td width=33% valign=top>
 
-
+* [Dup](#dup)
+* [Drop](#drop)
+* [Over](#over)
+* [Rot](#rot)
 
 </td><td valign=top>
-
-
 
 </td></tr>
 </table>
