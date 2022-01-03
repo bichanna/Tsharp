@@ -34,6 +34,7 @@ $ ./main.exe examples/main.tsp
 * [Drop](#drop)
 * [Over](#over)
 * [Rot](#rot)
+* [Swap](#swap)
 
 </td><td valign=top>
 
@@ -181,6 +182,12 @@ type # int string bool type
 1 2 3 rot print print print
 ```
 'rot' rotate top three stack elements.
+
+## Swap
+```pascal
+1 2 swap print print
+```
+'swap' swaps two values in stack.
 
 ## Over
 ```python
