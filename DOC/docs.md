@@ -15,6 +15,25 @@ or
 $ ./main.exe examples/main.tsp
 ```
 
+## Table of Contents
+<table>
+    <tr><td width=33% valign=top>
+
+* [Hello World](#hello-world)
+* [Comments](#comments)
+
+
+</td><td width=33% valign=top>
+
+
+
+</td><td valign=top>
+
+
+
+</td></tr>
+</table>
+
 ## Hello World
 ```pascal
 "Hello World!" print
