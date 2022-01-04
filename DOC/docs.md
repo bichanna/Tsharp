@@ -22,6 +22,7 @@ $ ./main.exe examples/main.tsp
 * [Hello World](#hello-world)
 * [Comments](#comments)
 * [Block](#block)
+* [Variable](#variable)
 * [Arithmetic](#arithmetic)
 * [If Statement](#if-statement)
 * [For loop](#for-loop)
@@ -36,8 +37,11 @@ $ ./main.exe examples/main.tsp
 * [Rot](#rot)
 * [Swap](#swap)
 
-</td><td valign=top>
+</td><td width=33% valign=top>
 
+* [FizzBuzz](#fizzbuzz)
+* [Factorial](#factorial)
+        
 </td></tr>
 </table>
 
@@ -253,3 +257,22 @@ for dup 100 <= do
     inc
 end drop
 ```
+
+## Factorial
+```pascal
+block Factorial do
+    -> n
+    1 -> x
+    for n 1 >= do
+        x n * -> x
+        n 1 - -> n
+    end
+    x
+end
+
+5
+call Factorial
+print
+```
+
+
