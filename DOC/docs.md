@@ -42,6 +42,8 @@ $ ./main.exe examples/main.tsp
 * [Swap](#swap)
 * [Inc](#inc)
 * [Dec](#dec)
+* [printS](#prints)
+* [printv](#printv)
 
 </td><td valign=top>
 
