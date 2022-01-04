@@ -28,6 +28,7 @@ $ ./main.exe examples/main.tsp
 
 * [For loop](#for-loop)
     * [Loop 100 times](#loop-100-times)
+    * [Break](#break)
  
 * [Error handling](#error-handling)
 * [Import](#import)
@@ -140,6 +141,16 @@ printV
 0 for dup 100 <=  do
     dup print
     inc
+end
+```
+
+### Break
+```pascal
+0 for dup 100 <= do
+    dup print
+    if dup 10 == do
+        break
+    end
 end
 ```
 
