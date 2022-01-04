@@ -25,7 +25,10 @@ $ ./main.exe examples/main.tsp
 * [Variable](#variable)
 * [Arithmetic](#arithmetic)
 * [If Statement](#if-statement)
+
 * [For loop](#for-loop)
+    * [Loop 100 times](#loop-100-times)
+ 
 * [Error handling](#error-handling)
 * [Import](#import)
 
@@ -39,7 +42,7 @@ $ ./main.exe examples/main.tsp
 * [Inc](#inc)
 * [Dec](#dec)
 
-</td><td width=33% valign=top>
+</td><td valign=top>
 
 * [Examples](#examples)
     * [FizzBuzz](#fizzbuzz)
@@ -131,10 +134,12 @@ printV
 'printV' print all variables.
 
 ## For loop
+
+### Loop 100 times
 ```pascal
-for true do
-    "Hello World!" print
-    break
+0 for dup 100 <=  do
+    dup print
+    inc
 end
 ```
 
