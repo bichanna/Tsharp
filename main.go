@@ -302,7 +302,7 @@ func (lexer *Lexer) resetPosition() {
 
 
 // -----------------------------
-// ----------- Error------------
+// ---------- Errors -----------
 // -----------------------------
 
 type ErrorType int
@@ -422,8 +422,8 @@ type Id struct {
 
 type Try struct {
 	TryBody []Expr
-	ExceptError Expr
-	ExceptBody []Expr
+	ExceptErrors []Expr
+	ExceptBodys [][]Expr
 }
 
 // -----------------------------
@@ -737,21 +737,30 @@ func ParserParse(parser *Parser)  ([]Expr) {
 				var ErrorExpr Expr
 				parser.ParserEat(TOKEN_ID)
 				TryBody := ParserParse(parser)
-				if parser.current_token_type == TOKEN_EXCEPT {
-					parser.ParserEat(TOKEN_EXCEPT)
-					ErrorExpr = ParserParseError(parser)
-					parser.ParserEat(TOKEN_DO)
-				} else {
-					fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value '%s'", parser.line, parser.column, parser.current_token_value))
-					os.Exit(0)
+				var ExceptBodys [][]Expr
+				var ExceptErrors []Expr
+				for {
+					if parser.current_token_type == TOKEN_EXCEPT {
+						parser.ParserEat(TOKEN_EXCEPT)
+						ErrorExpr = ParserParseError(parser)
+						parser.ParserEat(TOKEN_DO)
+					} else {
+						fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value '%s'", parser.line, parser.column, parser.current_token_value))
+						os.Exit(0)
+					}
+					ExceptBody := ParserParse(parser)
+					ExceptBodys = append(ExceptBodys, ExceptBody)
+					ExceptErrors = append(ExceptErrors, ErrorExpr)
+					if parser.current_token_type == TOKEN_END {
+						break
+					}
 				}
-				ExceptBody := ParserParse(parser)
 				parser.ParserEat(TOKEN_END)
 				expr.Type = ExprTry
 				expr.AsTry = &Try {
 					TryBody: TryBody,
-					ExceptBody: ExceptBody,
-					ExceptError: ErrorExpr,
+					ExceptBodys: ExceptBodys,
+					ExceptErrors: ExceptErrors,
 				}
 				exprs = append(exprs, expr)
 			} else {
@@ -1468,8 +1477,13 @@ func OpRead() {
 
 func OpTry(expr Expr) (*Error) {
 	_, err := VisitExpr(expr.AsTry.TryBody, true)
-	if err != nil && err.Type == expr.AsTry.ExceptError.AsError {
-		VisitExpr(expr.AsTry.ExceptBody, true)
+	if err != nil {
+		for i := 0; i < len(expr.AsTry.ExceptErrors); i++ {
+			if err.Type == expr.AsTry.ExceptErrors[i].AsError {
+				_, err = VisitExpr(expr.AsTry.ExceptBodys[i], true)
+			}
+		}
+		return err
 	} else {
 		return err
 	}
