@@ -15,6 +15,47 @@ or
 $ ./main.exe examples/main.tsp
 ```
 
+## Table of Contents
+<table>
+    <tr><td width=33% valign=top>
+
+* [Hello World](#hello-world)
+* [Comments](#comments)
+* [Block](#block)
+* [Variable](#variable)
+* [Arithmetic](#arithmetic)
+* [If Statement](#if-statement)
+
+* [For loop](#for-loop)
+    * [Loop 100 times](#loop-100-times)
+    * [Break](#break)
+ 
+* [Error handling](#error-handling)
+* [Import](#import)
+
+</td><td width=33% valign=top>
+
+* [Dup](#dup)
+* [Drop](#drop)
+* [Over](#over)
+* [Rot](#rot)
+* [Swap](#swap)
+* [Inc](#inc)
+* [Dec](#dec)
+* [printS](#prints)
+* [printV](#printv)
+
+</td><td valign=top>
+
+* [Examples](#examples)
+    * [FizzBuzz](#fizzbuzz)
+    * [Factorial](#factorial)
+    * [Bubble Sort](#bubble-sort)
+    * [Fibonacci](#fibonacci)
+        
+</td></tr>
+</table>
+
 ## Hello World
 ```pascal
 "Hello World!" print
@@ -96,10 +137,22 @@ printV
 'printV' print all variables.
 
 ## For loop
+
+### Loop 100 times
 ```pascal
-for true do
-    "Hello World!" print
-    break
+0 for dup 100 <=  do
+    dup print
+    inc
+end
+```
+
+### Break
+```pascal
+0 for dup 100 <= do
+    dup print
+    if dup 10 == do
+        break
+    end
 end
 ```
 
@@ -157,6 +210,12 @@ type # int string bool type
 ```
 'rot' rotate top three stack elements.
 
+## Swap
+```pascal
+1 2 swap print print
+```
+'swap' swaps two values in stack.
+
 ## Over
 ```python
 1 2 over print print print
@@ -188,7 +247,6 @@ print
 ```
 'exit' will exit the program.
 
-
 ## List
 ```python
 [] # push empty list
@@ -204,8 +262,8 @@ print
 print
 ```
 
-
-## FizzBuzz
+## Examples
+### FizzBuzz
 ```pascal
 1 
 for dup 100 <= do
@@ -221,3 +279,70 @@ for dup 100 <= do
     inc
 end drop
 ```
+
+### Factorial
+```pascal
+block Factorial do
+    -> n
+    1 -> x
+    for n 1 >= do
+        x n * -> x
+        n 1 - -> n
+    end
+    x
+end
+
+5
+call Factorial
+print
+```
+
+### Bubble Sort
+```pascal
+block BubbleSort do
+    0 for dup length <= do
+        0 for dup length 1 - < do
+            dup -> j
+            j 1 + -> i
+            if arr j read swap i read swap drop > do
+                arr j read -> x
+                i read -> y
+                y j replace
+                x i replace
+                drop
+            end 
+            inc
+        end drop
+        inc
+    end drop
+end
+
+block Main do
+    [] 19 append 13 append 6  append 2  append 18 append 8 append 1 append dup -> arr
+
+    len -> length
+
+    "before:      " puts arr print
+
+    call BubbleSort
+
+    "sorted list: " puts print
+end
+
+call Main
+```
+
+### Fibonacci
+```pascal
+10000 -> n
+
+0 1 for over n < do
+  over puts " " puts
+  swap over +
+end
+drop drop
+
+"" print
+```
+
+
