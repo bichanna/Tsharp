@@ -739,20 +739,25 @@ func ParserParse(parser *Parser)  ([]Expr) {
 				TryBody := ParserParse(parser)
 				var ExceptBodys [][]Expr
 				var ExceptErrors []Expr
-				for {
-					if parser.current_token_type == TOKEN_EXCEPT {
-						parser.ParserEat(TOKEN_EXCEPT)
-						ErrorExpr = ParserParseError(parser)
-						parser.ParserEat(TOKEN_DO)
-					} else {
-						fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value '%s'", parser.line, parser.column, parser.current_token_value))
-						os.Exit(0)
-					}
-					ExceptBody := ParserParse(parser)
-					ExceptBodys = append(ExceptBodys, ExceptBody)
-					ExceptErrors = append(ExceptErrors, ErrorExpr)
-					if parser.current_token_type == TOKEN_END {
-						break
+				if parser.current_token_type == TOKEN_END {
+					ExceptBodys = nil
+					ExceptErrors = nil
+				} else {
+					for {
+						if parser.current_token_type == TOKEN_EXCEPT {
+							parser.ParserEat(TOKEN_EXCEPT)
+							ErrorExpr = ParserParseError(parser)
+							parser.ParserEat(TOKEN_DO)
+						} else {
+							fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value '%s'", parser.line, parser.column, parser.current_token_value))
+							os.Exit(0)
+						}
+						ExceptBody := ParserParse(parser)
+						ExceptBodys = append(ExceptBodys, ExceptBody)
+						ExceptErrors = append(ExceptErrors, ErrorExpr)
+						if parser.current_token_type == TOKEN_END {
+							break
+						}
 					}
 				}
 				parser.ParserEat(TOKEN_END)
@@ -1477,17 +1482,14 @@ func OpRead() {
 
 func OpTry(expr Expr) (*Error) {
 	_, err := VisitExpr(expr.AsTry.TryBody, true)
-	if err != nil {
+	if err != nil && expr.AsTry.ExceptErrors != nil {
 		for i := 0; i < len(expr.AsTry.ExceptErrors); i++ {
 			if err.Type == expr.AsTry.ExceptErrors[i].AsError {
 				_, err = VisitExpr(expr.AsTry.ExceptBodys[i], true)
 			}
 		}
-		return err
-	} else {
-		return err
 	}
-	return nil
+	return err
 }
 
 
