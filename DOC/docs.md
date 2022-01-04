@@ -41,10 +41,11 @@ $ ./main.exe examples/main.tsp
 
 </td><td width=33% valign=top>
 
-* [FizzBuzz](#fizzbuzz)
-* [Factorial](#factorial)
-* [Bubble Sort](#bubble-sort)
-* [Fibonacci](#fibonacci)
+* [Examples](#examples)
+    * [FizzBuzz](#fizzbuzz)
+    * [Factorial](#factorial)
+    * [Bubble Sort](#bubble-sort)
+    * [Fibonacci](#fibonacci)
         
 </td></tr>
 </table>
@@ -243,8 +244,8 @@ print
 print
 ```
 
-
-## FizzBuzz
+## Examples
+### FizzBuzz
 ```pascal
 1 
 for dup 100 <= do
@@ -261,7 +262,7 @@ for dup 100 <= do
 end drop
 ```
 
-## Factorial
+### Factorial
 ```pascal
 block Factorial do
     -> n
@@ -278,7 +279,7 @@ call Factorial
 print
 ```
 
-## Bubble Sort
+### Bubble Sort
 ```pascal
 block BubbleSort do
     0 for dup length <= do
@@ -313,7 +314,7 @@ end
 call Main
 ```
 
-# Fibonacci
+### Fibonacci
 ```pascal
 10000 -> n
 
