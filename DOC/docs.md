@@ -36,6 +36,8 @@ $ ./main.exe examples/main.tsp
 * [Over](#over)
 * [Rot](#rot)
 * [Swap](#swap)
+* [Inc](#inc)
+* [Dec](#dec)
 
 </td><td width=33% valign=top>
 
@@ -225,7 +227,6 @@ exit
 print
 ```
 'exit' will exit the program.
-
 
 ## List
 ```python
