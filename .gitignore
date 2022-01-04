@@ -7,3 +7,4 @@ tsharp
 *.py
 backup.go
 ignore
+*.out
