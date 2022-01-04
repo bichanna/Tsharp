@@ -43,7 +43,7 @@ $ ./main.exe examples/main.tsp
 * [Inc](#inc)
 * [Dec](#dec)
 * [printS](#prints)
-* [printv](#printv)
+* [printV](#printv)
 
 </td><td valign=top>
 
