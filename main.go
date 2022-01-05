@@ -1080,8 +1080,8 @@ func OpPrintV() {
 }
 
 func OpInput() {
-	var input string
-	fmt.Scanln(&input)
+	inputReader := bufio.NewReader(os.Stdin)
+	input, _ := inputReader.ReadString('\n')
 	inpExpr := Expr{}
 	inpExpr.Type = ExprStr
 	inpExpr.AsStr = input
