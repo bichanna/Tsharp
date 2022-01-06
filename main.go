@@ -1475,15 +1475,21 @@ func OpRead() {
 	if visitedIndex.Type != ExprInt {
 		fmt.Println("TypeError: 'read' index expected type <int>"); os.Exit(0);
 	}
-	if visitedList.Type != ExprArr {
-		fmt.Println("TypeError: 'read' expected type <list>"); os.Exit(0);
+	if visitedList.Type != ExprArr && visitedList.Type != ExprStr {
+		fmt.Println("TypeError: 'read' expected type <list> or <string>"); os.Exit(0);
 	}
 	if visitedIndex.AsInt != math.Trunc(visitedIndex.AsInt) {
 		fmt.Println("Error: list index must be integer not float"); os.Exit(0);
 	}
 	OpDrop()
-	ExprValue := visitedList.AsArr[int(visitedIndex.AsInt)]
-	OpPush(ExprValue)
+	if visitedList.Type == ExprArr {
+		OpPush(visitedList.AsArr[int(visitedIndex.AsInt)])
+	} else if visitedList.Type == ExprStr {
+		StrExpr := Expr{}
+		StrExpr.Type = ExprStr
+		StrExpr.AsStr = string([]rune(visitedList.AsStr)[int(visitedIndex.AsInt)])
+		OpPush(StrExpr)
+	}
 }
 
 func OpTry(expr Expr) (*Error) {
