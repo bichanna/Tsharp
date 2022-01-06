@@ -1239,16 +1239,22 @@ func OpLen() (*Error) {
 
 	visitedExpr := Stack[len(Stack)-1]
 
-	if visitedExpr.Type != ExprArr {
+	if visitedExpr.Type != ExprArr && visitedExpr.Type != ExprStr {
 		err := Error{}
-		err.message = "TypeError: `len` expected type <list>."
+		err.message = "TypeError: `len` expected type <list> or <string>."
 		err.Type = TypeError
 		return &err
 	}
 
 	IntExpr := Expr{}
 	IntExpr.Type = ExprInt
-	IntExpr.AsInt = float64(len(visitedExpr.AsArr))
+
+	if visitedExpr.Type == ExprArr {
+		IntExpr.AsInt = float64(len(visitedExpr.AsArr))
+	} else if visitedExpr.Type == ExprStr {
+		IntExpr.AsInt = float64(len(visitedExpr.AsStr))
+	}
+
 	OpPush(IntExpr)
 	return nil
 }
@@ -1467,17 +1473,23 @@ func OpRead() {
 	visitedList := Stack[len(Stack)-2]
 	visitedIndex := Stack[len(Stack)-1]
 	if visitedIndex.Type != ExprInt {
-		fmt.Println("TypeError: 'replace' index expected type <int>"); os.Exit(0);
+		fmt.Println("TypeError: 'read' index expected type <int>"); os.Exit(0);
 	}
-	if visitedList.Type != ExprArr {
-		fmt.Println("TypeError: 'replace' expected type <list>"); os.Exit(0);
+	if visitedList.Type != ExprArr && visitedList.Type != ExprStr {
+		fmt.Println("TypeError: 'read' expected type <list> or <string>"); os.Exit(0);
 	}
 	if visitedIndex.AsInt != math.Trunc(visitedIndex.AsInt) {
 		fmt.Println("Error: list index must be integer not float"); os.Exit(0);
 	}
 	OpDrop()
-	ExprValue := visitedList.AsArr[int(visitedIndex.AsInt)]
-	OpPush(ExprValue)
+	if visitedList.Type == ExprArr {
+		OpPush(visitedList.AsArr[int(visitedIndex.AsInt)])
+	} else if visitedList.Type == ExprStr {
+		StrExpr := Expr{}
+		StrExpr.Type = ExprStr
+		StrExpr.AsStr = string([]rune(visitedList.AsStr)[int(visitedIndex.AsInt)])
+		OpPush(StrExpr)
+	}
 }
 
 func OpTry(expr Expr) (*Error) {
