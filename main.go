@@ -1467,10 +1467,10 @@ func OpRead() {
 	visitedList := Stack[len(Stack)-2]
 	visitedIndex := Stack[len(Stack)-1]
 	if visitedIndex.Type != ExprInt {
-		fmt.Println("TypeError: 'replace' index expected type <int>"); os.Exit(0);
+		fmt.Println("TypeError: 'read' index expected type <int>"); os.Exit(0);
 	}
 	if visitedList.Type != ExprArr {
-		fmt.Println("TypeError: 'replace' expected type <list>"); os.Exit(0);
+		fmt.Println("TypeError: 'read' expected type <list>"); os.Exit(0);
 	}
 	if visitedIndex.AsInt != math.Trunc(visitedIndex.AsInt) {
 		fmt.Println("Error: list index must be integer not float"); os.Exit(0);
