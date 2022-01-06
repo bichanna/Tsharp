@@ -1239,16 +1239,22 @@ func OpLen() (*Error) {
 
 	visitedExpr := Stack[len(Stack)-1]
 
-	if visitedExpr.Type != ExprArr {
+	if visitedExpr.Type != ExprArr && visitedExpr.Type != ExprStr {
 		err := Error{}
-		err.message = "TypeError: `len` expected type <list>."
+		err.message = "TypeError: `len` expected type <list> or <string>."
 		err.Type = TypeError
 		return &err
 	}
 
 	IntExpr := Expr{}
 	IntExpr.Type = ExprInt
-	IntExpr.AsInt = float64(len(visitedExpr.AsArr))
+
+	if visitedExpr.Type == ExprArr {
+		IntExpr.AsInt = float64(len(visitedExpr.AsArr))
+	} else if visitedExpr.Type == ExprStr {
+		IntExpr.AsInt = float64(len(visitedExpr.AsStr))
+	}
+
 	OpPush(IntExpr)
 	return nil
 }
