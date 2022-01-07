@@ -338,6 +338,7 @@ const (
 	ExprArr
 	ExprAppend
 	ExprReplace
+	ExprRemove
 	ExprRead
 	ExprTypeType
 	ExprPush
@@ -732,6 +733,10 @@ func ParserParse(parser *Parser)  ([]Expr) {
 			} else if parser.current_token_value == "replace" {
 				parser.ParserEat(TOKEN_ID)
 				expr.Type = ExprReplace
+				exprs = append(exprs, expr)
+			} else if parser.current_token_value == "remove" {
+				parser.ParserEat(TOKEN_ID)
+				expr.Type = ExprRemove
 				exprs = append(exprs, expr)
 			} else if parser.current_token_value == "read" {
 				parser.ParserEat(TOKEN_ID)
@@ -1471,6 +1476,36 @@ func OpReplace() {
 	OpPush(visitedList)
 }
 
+func RemoveIndex(s []Expr, index int) []Expr {
+    return append(s[:index], s[index+1:]...)
+}
+
+func OpRemove() {
+	if len(Stack) < 2 {
+		fmt.Println("Error: 'remove' expected more than three element in stack."); os.Exit(0);
+	}
+	visitedList := Stack[len(Stack)-2]
+	visitedIndex := Stack[len(Stack)-1]
+	if visitedIndex.Type != ExprInt {
+		fmt.Println("TypeError: 'remove' index expected type <int>"); os.Exit(0);
+	}
+	if visitedIndex.AsInt != math.Trunc(visitedIndex.AsInt) {
+		fmt.Println("Error: list index must be integer not float"); os.Exit(0);
+	}
+	if int(visitedIndex.AsInt) >= len(visitedList.AsArr) {
+		fmt.Println("Error: 'remove' index out of range."); os.Exit(0);
+	}
+	if visitedList.Type != ExprArr {
+		fmt.Println("TypeError: 'remove' expected type <list>"); os.Exit(0);
+	}
+
+	visitedList.AsArr = RemoveIndex(visitedList.AsArr, int(visitedIndex.AsInt))
+
+	OpDrop()
+	OpDrop()
+	OpPush(visitedList)
+}
+
 func OpRead() {
 	if len(Stack) < 2 {
 		fmt.Println("Error: 'read' expected more than two element in stack."); os.Exit(0);
@@ -1580,6 +1615,8 @@ func VisitExpr(exprs []Expr, isTry bool) (bool, *Error) {
 				OpAppend(expr)
 			case ExprReplace:
 				OpReplace()
+			case ExprRemove:
+				OpRemove()
 			case ExprRead:
 				OpRead()
 			case ExprTypeOf:
