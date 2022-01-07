@@ -249,9 +249,13 @@ func (lexer *Lexer) lexId() string {
         lexer.pos.column++
 		if unicode.IsLetter(r) {
 			val = val + string(r)
-		} else {
+		} else if unicode.IsDigit(r) {
+			val = val + string(r)
+		} else if unicode.IsSpace(r) {
 			lexer.backup()
 			return val
+		} else {
+			val = val + string(r)
 		}
 	}
 }
@@ -1082,6 +1086,7 @@ func OpPrintV() {
 func OpInput() {
 	inputReader := bufio.NewReader(os.Stdin)
 	input, _ := inputReader.ReadString('\n')
+	input = input[:len(input)-1]
 	inpExpr := Expr{}
 	inpExpr.Type = ExprStr
 	inpExpr.AsStr = input
