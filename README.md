@@ -158,8 +158,5 @@ end
 end
 ```
 
-<a href="https://github.com/Tsharp-lang/Tsharp/blob/main/DOC/docs.md">Doc</a>
-
-
 ### Contributing
 Welcome! 💕
