@@ -225,6 +225,12 @@ func (lexer *Lexer) Lex() (Position, Token, string) {
 					val := lexer.lexString()
 					r, _, err = lexer.reader.ReadRune()
 					return startPos, TOKEN_STRING, val
+				} else if string(r) == "'" {
+					startPos := lexer.pos
+					lexer.backup()
+					val := lexer.lexStringSingle()
+					r, _, err = lexer.reader.ReadRune()
+					return startPos, TOKEN_STRING, val
 				}
         }
 	}
@@ -254,8 +260,13 @@ func (lexer *Lexer) lexId() string {
 		} else if unicode.IsSpace(r) {
 			lexer.backup()
 			return val
-		} else {
+		} else if string(r) == "_" {
 			val = val + string(r)
+		} else if string(r) == "-" {
+			val = val + string(r)
+		} else {
+			lexer.backup()
+			return val
 		}
 	}
 }
@@ -291,6 +302,26 @@ func (lexer *Lexer) lexString() string {
 		}
 		lexer.pos.column++
 		if r != '"' {
+			val = val + string(r)
+		} else {
+			lexer.backup()
+			return val
+		}
+	}
+}
+
+func (lexer *Lexer) lexStringSingle() string {
+	var val string
+	r, _, err := lexer.reader.ReadRune()
+	for {
+		r, _, err = lexer.reader.ReadRune()
+		if err != nil {
+			if err == io.EOF {
+				return val
+			}
+		}
+		lexer.pos.column++
+		if string(r) != "'" {
 			val = val + string(r)
 		} else {
 			lexer.backup()
