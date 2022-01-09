@@ -1712,7 +1712,7 @@ func VisitExpr(exprs []Expr, isTry bool) (bool, *Error) {
 
 func Usage() {
 	fmt.Println("Usage:")
-	fmt.Println("  tsh <filename>.t#")
+	fmt.Println("  tsh <filename>.tsp")
 	os.Exit(0)
 }
 
