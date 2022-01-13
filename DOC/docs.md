@@ -69,7 +69,7 @@ $ ./main.exe examples/main.tsp
 
 ## Import
 ```python
-import "main.t#"
+import "main.tsp"
 ```
 
 ## Block
