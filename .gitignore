@@ -1,10 +1,10 @@
 main
-main.exe
+*.exe
 rewrite
-rewrite.exe
 rewrite.go
 tsharp
 *.py
-backup.go
 ignore
 *.out
+tsharp2
+*.tsp
