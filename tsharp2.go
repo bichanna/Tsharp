@@ -363,29 +363,43 @@ type AsStr struct {
 	StringValue string
 }
 
+func (node AsStr) node() {}
+
 type AsInt struct {
 	IntValue int
 }
+
+func (node AsInt) node() {}
 
 type AsBool struct {
 	BoolValue bool
 }
 
+func (node AsBool) node() {}
+
 type AsId struct {
 	name string
 }
+
+func (node AsId) node() {}
 
 type AsError struct {
 	err ErrorType
 }
 
+func (node AsError) node() {}
+
 type AsBinop struct {
 	op uint8
 }
 
+func (node AsBinop) node() {}
+
 type AsPush struct {
 	value AST
 }
+
+func (node AsPush) node() {}
 
 type If struct {
 	IfOp AST
@@ -395,10 +409,14 @@ type If struct {
 	ElseBody AST
 }
 
+func (node If) node() {}
+
 type For struct {
 	ForOp AST
 	ForBody AST
 }
+
+func (node For) node() {}
 
 type Try struct {
 	TryBody AST
@@ -406,19 +424,11 @@ type Try struct {
 	ExceptBodys []AST
 }
 
+func (node Try) node() {}
+
 type AsStatements []AST
 
-func (node AsPush)       node() {}
-func (node AsStr)        node() {}
-func (node AsInt)        node() {}
 func (node AsStatements) node() {}
-func (node AsId)         node() {}
-func (node AsBool)       node() {}
-func (node AsError)      node() {}
-func (node AsBinop)      node() {}
-func (node If)           node() {}
-func (node For)          node() {}
-func (node Try)          node() {}
 
 type AST interface {
 	node()
