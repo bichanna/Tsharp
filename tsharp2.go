@@ -527,6 +527,10 @@ func ParserParseExpr(parser *Parser) AST {
 
 func ParserParse(parser *Parser) AST {
 	var Statements AsStatements
+	if  parser.current_token_type == TOKEN_DO || parser.current_token_type == TOKEN_END || parser.current_token_type == TOKEN_ELIF || parser.current_token_type == TOKEN_ELSE || parser.current_token_type == TOKEN_EXCEPT {
+		fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: the body is empty, unexpected token value `%s`.", parser.line, parser.column, parser.current_token_value))
+		os.Exit(0)
+	}
 	for {
 		if parser.current_token_type == TOKEN_ID {
 			if parser.current_token_value == "print" || parser.current_token_value == "break" ||
