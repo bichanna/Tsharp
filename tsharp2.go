@@ -486,6 +486,8 @@ func ParserParseError(parser *Parser) AST {
 		err = NameError
 	} else if parser.current_token_value == "ImportError" {
 		err = ImportError
+	} else if parser.current_token_value == "TypeError" {
+		err = TypeError
 	}
 	parser.ParserEat(TOKEN_ERROR)
 	ErrorExpr := AsError {
@@ -527,7 +529,8 @@ func ParserParse(parser *Parser) AST {
 	var Statements AsStatements
 	for {
 		if parser.current_token_type == TOKEN_ID {
-			if parser.current_token_value == "print" || parser.current_token_value == "break" {
+			if parser.current_token_value == "print" || parser.current_token_value == "break" ||
+			   parser.current_token_value == "drop"  || parser.current_token_value == "dup" {
 				name := parser.current_token_value
 				IdExpr := AsId{name}
 				parser.ParserEat(TOKEN_ID)
@@ -605,19 +608,22 @@ func ParserParse(parser *Parser) AST {
 				fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`", parser.line, parser.column, parser.current_token_value))
 				os.Exit(0)
 			}
-		} else if parser.current_token_type == TOKEN_INT || parser.current_token_type == TOKEN_STRING || parser.current_token_type == TOKEN_BOOL || parser.current_token_type == TOKEN_ERROR {
+		} else if parser.current_token_type == TOKEN_INT  || parser.current_token_type == TOKEN_STRING ||
+		    parser.current_token_type == TOKEN_BOOL || parser.current_token_type == TOKEN_ERROR {
 			expr := ParserParseExpr(parser)
 			PushExpr := AsPush{
 				value: expr,
 			}
 			Statements = append(Statements, PushExpr)
-		} else if parser.current_token_type == TOKEN_PLUS {
+		} else if parser.current_token_type == TOKEN_PLUS || parser.current_token_type == TOKEN_MINUS || parser.current_token_type == TOKEN_MUL || parser.current_token_type == TOKEN_DIV {
 			BinopExpr := AsBinop {
-				op: TOKEN_PLUS,
+				op: uint8(parser.current_token_type),
 			}
 			parser.ParserEat(TOKEN_PLUS)
 			Statements = append(Statements, BinopExpr)
-		} else if parser.current_token_type == TOKEN_EOF || parser.current_token_type == TOKEN_DO || parser.current_token_type == TOKEN_END || parser.current_token_type == TOKEN_ELIF || parser.current_token_type == TOKEN_ELSE || parser.current_token_type == TOKEN_EXCEPT {
+		} else if parser.current_token_type == TOKEN_EOF || parser.current_token_type == TOKEN_DO ||
+		    parser.current_token_type == TOKEN_END || parser.current_token_type == TOKEN_ELIF ||
+			parser.current_token_type == TOKEN_ELSE || parser.current_token_type == TOKEN_EXCEPT {
 			break
 		} else {
 			fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value '%s'", parser.line, parser.column, parser.current_token_value))
@@ -638,32 +644,67 @@ func OpPush(node AST) {
 	Stack = append(Stack, node)
 }
 
-func OpDrop() {
+func OpDrop() (*Error) {
 	if len(Stack) < 1 {
-		fmt.Println("Error: empty stack.")
-		os.Exit(0)
+		err := Error{}
+		err.message = "StackIndexError: `drop` expected more than one value in the stack."
+		err.Type = StackIndexError
+		return &err
 	}
 	Stack = Stack[:len(Stack)-1]
+	return nil
 }
 
-func OpBinop(op uint8) {
+func RetTokenAsStr(token uint8) string {
+	var tok string
+	switch token {
+		case TOKEN_PLUS:
+			tok = "+"
+		case TOKEN_MINUS:
+			tok = "-"
+		case TOKEN_MUL:
+			tok = "*"
+		case TOKEN_DIV:
+			tok = "/"
+	}
+	return tok
+}
+
+func OpBinop(op uint8) (*Error) {
+	if len(Stack) < 2 {
+		err := Error{}
+		err.message = fmt.Sprintf("StackIndexError: `%s` expected more than 2 type <int> values in the stack.", RetTokenAsStr(op))
+		err.Type = StackIndexError
+		return &err
+	}
 	first := Stack[len(Stack)-1]
 	second := Stack[len(Stack)-2]
 	if _, ok := first.(AsInt); !ok {
-		fmt.Println("Error: operation binop expected type <int>")
-		os.Exit(0)
+		err := Error{}
+		err.message = fmt.Sprintf("StackIndexError: `%s` expected type <int>", RetTokenAsStr(op))
+		err.Type = TypeError
+		return &err
 	}
 	if _, ok := second.(AsInt); !ok {
-		fmt.Println("Error: operation binop expected type <int>")
-		os.Exit(0)
+		err := Error{}
+		err.message = fmt.Sprintf("StackIndexError: `%s` expected type <int>", RetTokenAsStr(op))
+		err.Type = TypeError
+		return &err
 	}
-	sum := first.(AsInt).IntValue + second.(AsInt).IntValue
+	var val int
+	switch op {
+		case TOKEN_PLUS: val = first.(AsInt).IntValue + second.(AsInt).IntValue
+		case TOKEN_MINUS:  val = second.(AsInt).IntValue - first.(AsInt).IntValue
+		case TOKEN_MUL: val = second.(AsInt).IntValue * first.(AsInt).IntValue
+		case TOKEN_DIV: val = second.(AsInt).IntValue / first.(AsInt).IntValue
+	}
 	OpDrop()
 	OpDrop()
 	expr := AsInt {
-		sum,
+		val,
 	}
 	OpPush(expr)
+	return nil
 }
 
 func OpPrint() (*Error) {
@@ -775,9 +816,11 @@ func VisitorVisit(expr AST, IsTry bool) (bool, *Error) {
 					err = OpPrint()
 				} else if expr.(AsStatements)[i].(AsId).name == "break" {
 					BreakValue = true
+				} else if expr.(AsStatements)[i].(AsId).name == "drop" {
+					err = OpDrop()
 				}
 			case AsBinop:
-				OpBinop(expr.(AsStatements)[i].(AsBinop).op)
+				err = OpBinop(expr.(AsStatements)[i].(AsBinop).op)
 			case AsStatements:
 				VisitorVisit(expr.(AsStatements)[i].(AsStatements), IsTry)
 			case If:
