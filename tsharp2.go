@@ -642,20 +642,35 @@ func ParserParse(parser *Parser) AST {
 // ----------- Stack -----------
 // -----------------------------
 
-var Stack = []AST{}
-
-func OpPush(node AST) {
-	Stack = append(Stack, node)
+type Scope struct {
+    Stack []AST
+    Variables map[string]AST
+    Blocks map[string][]AST
 }
 
-func OpDrop() (*Error) {
-	if len(Stack) < 1 {
+func InitScope() *Scope {
+	stack := []AST{}
+	variables := map[string]AST{}
+	blocks := map[string][]AST{}
+	return &Scope{
+		Stack: stack,
+		Variables: variables,
+		Blocks: blocks,
+	}
+}
+
+func (scope *Scope) OpPush(node AST) {
+	scope.Stack = append(scope.Stack, node)
+}
+
+func (scope *Scope) OpDrop() (*Error) {
+	if len(scope.Stack) < 1 {
 		err := Error{}
 		err.message = "StackIndexError: `drop` expected more than one value in the stack."
 		err.Type = StackIndexError
 		return &err
 	}
-	Stack = Stack[:len(Stack)-1]
+	scope.Stack = scope.Stack[:len(scope.Stack)-1]
 	return nil
 }
 
@@ -674,15 +689,15 @@ func RetTokenAsStr(token uint8) string {
 	return tok
 }
 
-func OpBinop(op uint8) (*Error) {
-	if len(Stack) < 2 {
+func (scope *Scope) OpBinop(op uint8) (*Error) {
+	if len(scope.Stack) < 2 {
 		err := Error{}
 		err.message = fmt.Sprintf("StackIndexError: `%s` expected more than 2 type <int> values in the stack.", RetTokenAsStr(op))
 		err.Type = StackIndexError
 		return &err
 	}
-	first := Stack[len(Stack)-1]
-	second := Stack[len(Stack)-2]
+	first := scope.Stack[len(scope.Stack)-1]
+	second := scope.Stack[len(scope.Stack)-2]
 	if _, ok := first.(AsInt); !ok {
 		err := Error{}
 		err.message = fmt.Sprintf("StackIndexError: `%s` expected type <int>.", RetTokenAsStr(op))
@@ -702,23 +717,23 @@ func OpBinop(op uint8) (*Error) {
 		case TOKEN_MUL: val = second.(AsInt).IntValue * first.(AsInt).IntValue
 		case TOKEN_DIV: val = second.(AsInt).IntValue / first.(AsInt).IntValue
 	}
-	OpDrop()
-	OpDrop()
+	scope.OpDrop()
+	scope.OpDrop()
 	expr := AsInt {
 		val,
 	}
-	OpPush(expr)
+	scope.OpPush(expr)
 	return nil
 }
 
-func OpPrint() (*Error) {
-	if len(Stack) < 1 {
+func (scope *Scope) OpPrint() (*Error) {
+	if len(scope.Stack) < 1 {
 		err := Error{}
 		err.message = "StackIndexError: `print` the stack is empty."
 		err.Type = StackIndexError
 		return &err
 	}
-	expr := Stack[len(Stack)-1]
+	expr := scope.Stack[len(scope.Stack)-1]
 	switch expr.(type) {
 		case AsStr: fmt.Println(expr.(AsStr).StringValue)
 		case AsInt: fmt.Println(expr.(AsInt).IntValue)
@@ -731,55 +746,55 @@ func OpPrint() (*Error) {
 				default: fmt.Println(fmt.Sprintf("unexpected error <%d>", expr.(AsError).err))
 			}
 	}
-	OpDrop()
+	scope.OpDrop()
 	return nil
 }
 
-func getBool() (bool) {
-	expr := Stack[len(Stack)-1]
+func (scope *Scope) getBool() (bool) {
+	expr := scope.Stack[len(scope.Stack)-1]
 	if _, ok := expr.(AsBool); !ok {
 		fmt.Println("Error: `getBool()` expected type <bool>.")
 		os.Exit(0)
 	}
-	OpDrop()
+	scope.OpDrop()
 	return expr.(AsBool).BoolValue
 }
 
-func OpIf(node AST, IsTry bool) bool {
-	VisitorVisit(node.(If).IfOp, IsTry)
+func (scope *Scope) OpIf(node AST, IsTry bool) bool {
+	scope.VisitorVisit(node.(If).IfOp, IsTry)
 	var BreakValue bool = false
 	var err *Error
-	if getBool() {
-		BreakValue, _ = VisitorVisit(node.(If).IfBody, IsTry)
+	if scope.getBool() {
+		BreakValue, _ = scope.VisitorVisit(node.(If).IfBody, IsTry)
 		if err != nil {
 			return BreakValue
 		}
 		return BreakValue
 	}
 	for i := 0; i < len(node.(If).ElifOps); i++ {
-		VisitorVisit(node.(If).ElifOps[i], IsTry)
-		if getBool() {
-			BreakValue, _ = VisitorVisit(node.(If).ElifBodys[i], IsTry)
+		scope.VisitorVisit(node.(If).ElifOps[i], IsTry)
+		if scope.getBool() {
+			BreakValue, _ = scope.VisitorVisit(node.(If).ElifBodys[i], IsTry)
 			return BreakValue
 		}
 	}
 	if node.(If).ElseBody != nil {
-		BreakValue, _ = VisitorVisit(node.(If).ElseBody, IsTry)
+		BreakValue, _ = scope.VisitorVisit(node.(If).ElseBody, IsTry)
 	}
 	return BreakValue
 }
 
-func OpFor(node AST, IsTry bool) (*Error) {
+func (scope *Scope) OpFor(node AST, IsTry bool) (*Error) {
 	var BreakValue bool
 	for {
-		_, err := VisitorVisit(node.(For).ForOp, IsTry)
+		_, err := scope.VisitorVisit(node.(For).ForOp, IsTry)
 		if err != nil {
 			return err
 		}
-		if !getBool() {
+		if !scope.getBool() {
 			break
 		}
-		BreakValue, err = VisitorVisit(node.(For).ForBody, IsTry)
+		BreakValue, err = scope.VisitorVisit(node.(For).ForBody, IsTry)
 		if err != nil {
 			return err
 		}
@@ -790,12 +805,12 @@ func OpFor(node AST, IsTry bool) (*Error) {
 	return nil
 }
 
-func OpTry(node AST) (*Error) {
-	_, err := VisitorVisit(node.(Try).TryBody, true)
+func (scope *Scope) OpTry(node AST) (*Error) {
+	_, err := scope.VisitorVisit(node.(Try).TryBody, true)
 	if err != nil {
 		for i := 0; i < len(node.(Try).ExceptErrors); i++ {
 			if node.(Try).ExceptErrors[i].(AsError).err == err.Type {
-				VisitorVisit(node.(Try).ExceptBodys[i], false)
+				scope.VisitorVisit(node.(Try).ExceptBodys[i], false)
 				return nil
 			}
 		}
@@ -808,32 +823,32 @@ func OpTry(node AST) (*Error) {
 // --------- Visitor -----------
 // -----------------------------
 
-func VisitorVisit(node AST, IsTry bool) (bool, *Error) {
+func (scope *Scope) VisitorVisit(node AST, IsTry bool) (bool, *Error) {
 	BreakValue := false
 	var err *Error
 	for i := 0; i < len(node.(AsStatements)); i++ {
 		node := node.(AsStatements)[i]
 		switch node.(type) {
 			case AsPush:
-				OpPush(node.(AsPush).value)
+				scope.OpPush(node.(AsPush).value)
 			case AsId:
 				if node.(AsId).name == "print" {
-					err = OpPrint()
+					err = scope.OpPrint()
 				} else if node.(AsId).name == "break" {
 					BreakValue = true
 				} else if node.(AsId).name == "drop" {
-					err = OpDrop()
+					err = scope.OpDrop()
 				}
 			case AsBinop:
-				err = OpBinop(node.(AsBinop).op)
+				err = scope.OpBinop(node.(AsBinop).op)
 			case AsStatements:
-				VisitorVisit(node.(AsStatements), IsTry)
+				scope.VisitorVisit(node.(AsStatements), IsTry)
 			case If:
-				BreakValue = OpIf(node.(If), IsTry)
+				BreakValue = scope.OpIf(node.(If), IsTry)
 			case For:
-				err = OpFor(node.(For), IsTry)
+				err = scope.OpFor(node.(For), IsTry)
 			case Try:
-				err = OpTry(node.(Try))
+				err = scope.OpTry(node.(Try))
 			default:
 				fmt.Println("Error: unexpected node type.")
 		}
@@ -884,6 +899,7 @@ func main() {
 	lexer := LexerInit(file)
 	parser := ParserInit(lexer)
 	ast := ParserParse(parser)
-	VisitorVisit(ast, false)
+	scope := InitScope()
+	scope.VisitorVisit(ast, false)
 }
 
