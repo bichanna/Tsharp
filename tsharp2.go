@@ -460,7 +460,7 @@ func ParserInit(lexer *Lexer) *Parser {
 
 func (parser *Parser) ParserEat(token Token) {
 	if token != parser.current_token_type {
-		fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value '%s'", parser.line, parser.column, parser.current_token_value))
+		fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`.", parser.line, parser.column, parser.current_token_value))
 		os.Exit(0)
 	}
 	pos, tok, val := parser.lexer.Lex()
@@ -518,7 +518,7 @@ func ParserParseExpr(parser *Parser) AST {
 		case TOKEN_ERROR:
 			expr = ParserParseError(parser)
 		default:
-			fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value '%s'", parser.line, parser.column, parser.current_token_value))
+			fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`.", parser.line, parser.column, parser.current_token_value))
 			os.Exit(0)
 	}
 
@@ -609,7 +609,7 @@ func ParserParse(parser *Parser) AST {
 				}
 				Statements = append(Statements, TryExpr)
 			} else {
-				fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`", parser.line, parser.column, parser.current_token_value))
+				fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`.", parser.line, parser.column, parser.current_token_value))
 				os.Exit(0)
 			}
 		} else if parser.current_token_type == TOKEN_INT  || parser.current_token_type == TOKEN_STRING ||
@@ -630,7 +630,7 @@ func ParserParse(parser *Parser) AST {
 			parser.current_token_type == TOKEN_ELSE || parser.current_token_type == TOKEN_EXCEPT {
 			break
 		} else {
-			fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value '%s'", parser.line, parser.column, parser.current_token_value))
+			fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`.", parser.line, parser.column, parser.current_token_value))
 			os.Exit(0)
 		}
 	}
@@ -685,13 +685,13 @@ func OpBinop(op uint8) (*Error) {
 	second := Stack[len(Stack)-2]
 	if _, ok := first.(AsInt); !ok {
 		err := Error{}
-		err.message = fmt.Sprintf("StackIndexError: `%s` expected type <int>", RetTokenAsStr(op))
+		err.message = fmt.Sprintf("StackIndexError: `%s` expected type <int>.", RetTokenAsStr(op))
 		err.Type = TypeError
 		return &err
 	}
 	if _, ok := second.(AsInt); !ok {
 		err := Error{}
-		err.message = fmt.Sprintf("StackIndexError: `%s` expected type <int>", RetTokenAsStr(op))
+		err.message = fmt.Sprintf("StackIndexError: `%s` expected type <int>.", RetTokenAsStr(op))
 		err.Type = TypeError
 		return &err
 	}
@@ -714,7 +714,7 @@ func OpBinop(op uint8) (*Error) {
 func OpPrint() (*Error) {
 	if len(Stack) < 1 {
 		err := Error{}
-		err.message = "StackIndexError: `print` the stack is empty"
+		err.message = "StackIndexError: `print` the stack is empty."
 		err.Type = StackIndexError
 		return &err
 	}
@@ -738,7 +738,7 @@ func OpPrint() (*Error) {
 func getBool() (bool) {
 	expr := Stack[len(Stack)-1]
 	if _, ok := expr.(AsBool); !ok {
-		fmt.Println("Error: `getBool()` expected type <bool>")
+		fmt.Println("Error: `getBool()` expected type <bool>.")
 		os.Exit(0)
 	}
 	OpDrop()
@@ -808,33 +808,34 @@ func OpTry(node AST) (*Error) {
 // --------- Visitor -----------
 // -----------------------------
 
-func VisitorVisit(expr AST, IsTry bool) (bool, *Error) {
+func VisitorVisit(node AST, IsTry bool) (bool, *Error) {
 	BreakValue := false
 	var err *Error
-	for i := 0; i < len(expr.(AsStatements)); i++ {
-		switch expr.(AsStatements)[i].(type) {
+	for i := 0; i < len(node.(AsStatements)); i++ {
+		node := node.(AsStatements)[i]
+		switch node.(type) {
 			case AsPush:
-				OpPush(expr.(AsStatements)[i].(AsPush).value)
+				OpPush(node.(AsPush).value)
 			case AsId:
-				if expr.(AsStatements)[i].(AsId).name == "print" {
+				if node.(AsId).name == "print" {
 					err = OpPrint()
-				} else if expr.(AsStatements)[i].(AsId).name == "break" {
+				} else if node.(AsId).name == "break" {
 					BreakValue = true
-				} else if expr.(AsStatements)[i].(AsId).name == "drop" {
+				} else if node.(AsId).name == "drop" {
 					err = OpDrop()
 				}
 			case AsBinop:
-				err = OpBinop(expr.(AsStatements)[i].(AsBinop).op)
+				err = OpBinop(node.(AsBinop).op)
 			case AsStatements:
-				VisitorVisit(expr.(AsStatements)[i].(AsStatements), IsTry)
+				VisitorVisit(node.(AsStatements), IsTry)
 			case If:
-				BreakValue = OpIf(expr.(AsStatements)[i].(If), IsTry)
+				BreakValue = OpIf(node.(If), IsTry)
 			case For:
-				err = OpFor(expr.(AsStatements)[i].(For), IsTry)
+				err = OpFor(node.(For), IsTry)
 			case Try:
-				err = OpTry(expr.(AsStatements)[i].(Try))
+				err = OpTry(node.(Try))
 			default:
-				fmt.Println("Error: unexpected ast.")
+				fmt.Println("Error: unexpected node type.")
 		}
 		if err != nil {
 			if !IsTry {
