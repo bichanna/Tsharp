@@ -623,7 +623,7 @@ func ParserParse(parser *Parser) AST {
 			BinopExpr := AsBinop {
 				op: uint8(parser.current_token_type),
 			}
-			parser.ParserEat(TOKEN_PLUS)
+			parser.ParserEat(parser.current_token_type)
 			Statements = append(Statements, BinopExpr)
 		} else if parser.current_token_type == TOKEN_EOF || parser.current_token_type == TOKEN_DO ||
 		    parser.current_token_type == TOKEN_END || parser.current_token_type == TOKEN_ELIF ||
