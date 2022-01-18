@@ -21,8 +21,6 @@ It's like Forth and Porth, but written in Go.
 
 ### TODO
 - [ ] Compile to C
-- [ ] Compile to 32bit assembly
-- [ ] Compile to 64bit assembly
 - [ ] Self-hosted
 
 ### Install
