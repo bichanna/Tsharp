@@ -540,7 +540,7 @@ func ParserParse(parser *Parser) AST {
 	for {
 		if parser.current_token_type == TOKEN_ID {
 			if parser.current_token_value == "print" || parser.current_token_value == "break" ||
-			   parser.current_token_value == "drop"  || parser.current_token_value == "dup" {
+			   parser.current_token_value == "drop"  || parser.current_token_value == "dup" || parser.current_token_value == "inc" || parser.current_token_value == "dec"  {
 				name := parser.current_token_value
 				IdExpr := AsId{name}
 				parser.ParserEat(TOKEN_ID)
@@ -835,28 +835,40 @@ func (scope *Scope) getBool() (bool) {
 	return expr.(AsBool).BoolValue
 }
 
-func (scope *Scope) OpIf(node AST, IsTry bool) bool {
+func (scope *Scope) OpIf(node AST, IsTry bool) (bool, *Error) {
 	scope.VisitorVisit(node.(If).IfOp, IsTry)
 	var BreakValue bool = false
-	var err *Error
+	var err *Error = nil
+	if len(scope.Stack) < 1 {
+		err := Error{}
+		err.message = "StackIndexError: If statement expected type <bool> value in the stack."
+		err.Type = StackIndexError
+		return BreakValue, &err
+	}
 	if scope.getBool() {
-		BreakValue, _ = scope.VisitorVisit(node.(If).IfBody, IsTry)
+		BreakValue, err = scope.VisitorVisit(node.(If).IfBody, IsTry)
 		if err != nil {
-			return BreakValue
+			return BreakValue, err
 		}
-		return BreakValue
+		return BreakValue, nil
 	}
 	for i := 0; i < len(node.(If).ElifOps); i++ {
 		scope.VisitorVisit(node.(If).ElifOps[i], IsTry)
+		if len(scope.Stack) < 1 {
+			err := Error{}
+			err.message = "StackIndexError: If statement expected type <bool> value in the stack."
+			err.Type = StackIndexError
+			return BreakValue, &err
+		}
 		if scope.getBool() {
-			BreakValue, _ = scope.VisitorVisit(node.(If).ElifBodys[i], IsTry)
-			return BreakValue
+			BreakValue, err = scope.VisitorVisit(node.(If).ElifBodys[i], IsTry)
+			return BreakValue, err
 		}
 	}
 	if node.(If).ElseBody != nil {
-		BreakValue, _ = scope.VisitorVisit(node.(If).ElseBody, IsTry)
+		BreakValue, err = scope.VisitorVisit(node.(If).ElseBody, IsTry)
 	}
-	return BreakValue
+	return BreakValue, err
 }
 
 func (scope *Scope) OpFor(node AST, IsTry bool) (*Error) {
@@ -865,6 +877,12 @@ func (scope *Scope) OpFor(node AST, IsTry bool) (*Error) {
 		_, err := scope.VisitorVisit(node.(For).ForOp, IsTry)
 		if err != nil {
 			return err
+		}
+		if len(scope.Stack) < 1 {
+			err := Error{}
+			err.message = "StackIndexError: For loop expected type <bool> value in the stack."
+			err.Type = StackIndexError
+			return &err
 		}
 		if !scope.getBool() {
 			break
@@ -893,6 +911,66 @@ func (scope *Scope) OpTry(node AST) (*Error) {
 	return err
 }
 
+func (scope *Scope) OpInc() (*Error) {
+	if len(scope.Stack) < 1 {
+		err := Error{}
+		err.message = "StackIndexError: `inc` expected type <int> value in the stack."
+		err.Type = StackIndexError
+		return &err
+	}
+	first := scope.Stack[len(scope.Stack)-1]
+	_, ok := first.(AsInt);
+	if !ok {
+		err := Error{}
+		err.message = "StackIndexError: `inc` expected type <int> value in the stack."
+		err.Type = StackIndexError
+		return &err
+	}
+	scope.OpDrop()
+	val := first.(AsInt).IntValue + 1
+	expr := AsInt {
+		val,
+	}
+	scope.OpPush(expr)
+	return nil
+}
+
+func (scope *Scope) OpDec() (*Error) {
+	if len(scope.Stack) < 1 {
+		err := Error{}
+		err.message = "StackIndexError: `dec` expected type <int> value in the stack."
+		err.Type = StackIndexError
+		return &err
+	}
+	first := scope.Stack[len(scope.Stack)-1]
+	_, ok := first.(AsInt);
+	if !ok {
+		err := Error{}
+		err.message = "StackIndexError: `dec` expected type <int> value in the stack."
+		err.Type = StackIndexError
+		return &err
+	}
+	scope.OpDrop()
+	val := first.(AsInt).IntValue - 1
+	expr := AsInt {
+		val,
+	}
+	scope.OpPush(expr)
+	return nil
+}
+
+func (scope *Scope) OpDup() (*Error) {
+	if len(scope.Stack) < 1 {
+		err := Error{}
+		err.message = "StackIndexError: `dup` expected type <int> value in the stack."
+		err.Type = StackIndexError
+		return &err
+	}
+	first := scope.Stack[len(scope.Stack)-1]
+	scope.OpPush(first)
+	return nil
+}
+
 
 // -----------------------------
 // --------- Visitor -----------
@@ -913,6 +991,12 @@ func (scope *Scope) VisitorVisit(node AST, IsTry bool) (bool, *Error) {
 					BreakValue = true
 				} else if node.(AsId).name == "drop" {
 					err = scope.OpDrop()
+				} else if node.(AsId).name == "inc" {
+					err = scope.OpInc()
+				} else if node.(AsId).name == "dec" {
+					err = scope.OpDec()
+				} else if node.(AsId).name == "dup" {
+					err = scope.OpDup()
 				}
 			case AsBinop:
 				err = scope.OpBinop(node.(AsBinop).op)
@@ -921,7 +1005,7 @@ func (scope *Scope) VisitorVisit(node AST, IsTry bool) (bool, *Error) {
 			case AsStatements:
 				scope.VisitorVisit(node.(AsStatements), IsTry)
 			case If:
-				BreakValue = scope.OpIf(node.(If), IsTry)
+				BreakValue, err = scope.OpIf(node.(If), IsTry)
 			case For:
 				err = scope.OpFor(node.(For), IsTry)
 			case Try:
