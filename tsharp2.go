@@ -678,7 +678,7 @@ func (scope *Scope) OpPush(node AST) {
 func (scope *Scope) OpDrop() (*Error) {
 	if len(scope.Stack) < 1 {
 		err := Error{}
-		err.message = "StackIndexError: `drop` expected more than one value in the stack."
+		err.message = "StackIndexError: `drop` expected more than one element in the stack."
 		err.Type = StackIndexError
 		return &err
 	}
@@ -716,7 +716,7 @@ func RetTokenAsStr(token uint8) string {
 func (scope *Scope) OpBinop(op uint8) (*Error) {
 	if len(scope.Stack) < 2 {
 		err := Error{}
-		err.message = fmt.Sprintf("StackIndexError: `%s` expected more than 2 type <int> values in the stack.", RetTokenAsStr(op))
+		err.message = fmt.Sprintf("StackIndexError: `%s` expected more than 2 <int> type elements in the stack.", RetTokenAsStr(op))
 		err.Type = StackIndexError
 		return &err
 	}
@@ -749,7 +749,7 @@ func (scope *Scope) OpBinop(op uint8) (*Error) {
 func (scope *Scope) OpCompare(op uint8) (*Error) {
 	if len(scope.Stack) < 2 {
 		err := Error{}
-		err.message = fmt.Sprintf("StackIndexError: `%s` expected more than 2 type <int> values in the stack.", RetTokenAsStr(op))
+		err.message = fmt.Sprintf("StackIndexError: `%s` expected more than 2 <int> type elements in the stack.", RetTokenAsStr(op))
 		err.Type = StackIndexError
 		return &err
 	}
@@ -781,7 +781,7 @@ func (scope *Scope) OpCompare(op uint8) (*Error) {
 		_, ok2 := second.(AsInt);
 		if !ok || !ok2 {
 			err := Error{}
-			err.message = fmt.Sprintf("StackIndexError: `%s` expected type <int>.", RetTokenAsStr(op))
+			err.message = fmt.Sprintf("StackIndexError: `%s` expected <int> type.", RetTokenAsStr(op))
 			err.Type = TypeError
 			return &err
 		}
@@ -828,7 +828,7 @@ func (scope *Scope) OpPrint() (*Error) {
 func (scope *Scope) getBool() (bool) {
 	expr := scope.Stack[len(scope.Stack)-1]
 	if _, ok := expr.(AsBool); !ok {
-		fmt.Println("Error: `getBool()` expected type <bool>.")
+		fmt.Println("TypeError: expected <bool> type.")
 		os.Exit(0)
 	}
 	scope.OpDrop()
@@ -841,7 +841,7 @@ func (scope *Scope) OpIf(node AST, IsTry bool) (bool, *Error) {
 	var err *Error = nil
 	if len(scope.Stack) < 1 {
 		err := Error{}
-		err.message = "StackIndexError: If statement expected type <bool> value in the stack."
+		err.message = "StackIndexError: if statement expected one or more <bool> type element in the stack."
 		err.Type = StackIndexError
 		return BreakValue, &err
 	}
@@ -856,7 +856,7 @@ func (scope *Scope) OpIf(node AST, IsTry bool) (bool, *Error) {
 		scope.VisitorVisit(node.(If).ElifOps[i], IsTry)
 		if len(scope.Stack) < 1 {
 			err := Error{}
-			err.message = "StackIndexError: If statement expected type <bool> value in the stack."
+			err.message = "StackIndexError: if statement expected one ore more <bool> type element in the stack."
 			err.Type = StackIndexError
 			return BreakValue, &err
 		}
@@ -880,7 +880,7 @@ func (scope *Scope) OpFor(node AST, IsTry bool) (*Error) {
 		}
 		if len(scope.Stack) < 1 {
 			err := Error{}
-			err.message = "StackIndexError: For loop expected type <bool> value in the stack."
+			err.message = "StackIndexError: for loop expected one or more <bool> type element in the stack."
 			err.Type = StackIndexError
 			return &err
 		}
@@ -914,7 +914,7 @@ func (scope *Scope) OpTry(node AST) (*Error) {
 func (scope *Scope) OpInc() (*Error) {
 	if len(scope.Stack) < 1 {
 		err := Error{}
-		err.message = "StackIndexError: `inc` expected type <int> value in the stack."
+		err.message = "StackIndexError: `inc` expected one or more <int> type element in the stack."
 		err.Type = StackIndexError
 		return &err
 	}
@@ -922,7 +922,7 @@ func (scope *Scope) OpInc() (*Error) {
 	_, ok := first.(AsInt);
 	if !ok {
 		err := Error{}
-		err.message = "StackIndexError: `inc` expected type <int> value in the stack."
+		err.message = "StackIndexError: `inc` expected one or more <int> type element in the stack."
 		err.Type = StackIndexError
 		return &err
 	}
@@ -938,7 +938,7 @@ func (scope *Scope) OpInc() (*Error) {
 func (scope *Scope) OpDec() (*Error) {
 	if len(scope.Stack) < 1 {
 		err := Error{}
-		err.message = "StackIndexError: `dec` expected type <int> value in the stack."
+		err.message = "StackIndexError: `dec` expected one or more <int> type element in the stack."
 		err.Type = StackIndexError
 		return &err
 	}
@@ -946,7 +946,7 @@ func (scope *Scope) OpDec() (*Error) {
 	_, ok := first.(AsInt);
 	if !ok {
 		err := Error{}
-		err.message = "StackIndexError: `dec` expected type <int> value in the stack."
+		err.message = "StackIndexError: `dec` expected one or more <int> type element in the stack."
 		err.Type = StackIndexError
 		return &err
 	}
@@ -962,7 +962,7 @@ func (scope *Scope) OpDec() (*Error) {
 func (scope *Scope) OpDup() (*Error) {
 	if len(scope.Stack) < 1 {
 		err := Error{}
-		err.message = "StackIndexError: `dup` expected type <int> value in the stack."
+		err.message = "StackIndexError: `dup` expected one or more <int> type element in the stack."
 		err.Type = StackIndexError
 		return &err
 	}
@@ -1045,7 +1045,7 @@ func main() {
 
 	file, err := os.Open(os.Args[1])
 	if err != nil {
-		fmt.Println("Error: file '" + os.Args[1] + "' does not exist")
+		fmt.Println(fmt.Sprintf("Error: invalid file name '%s'.", os.Args[1]))
 
 		whilte := color.New(color.FgWhite)
 
