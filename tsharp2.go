@@ -6,7 +6,7 @@ import (
 	"bufio"
 	"io"
 	"unicode"
-	_"reflect"
+	"reflect"
 	_"unsafe"
 	"strconv"
 	"github.com/fatih/color"
@@ -383,6 +383,12 @@ type AsId struct {
 
 func (node AsId) node() {}
 
+type Compare struct {
+	op uint8
+}
+
+func (node Compare) node() {}
+
 type AsError struct {
 	err ErrorType
 }
@@ -625,6 +631,12 @@ func ParserParse(parser *Parser) AST {
 			}
 			parser.ParserEat(parser.current_token_type)
 			Statements = append(Statements, BinopExpr)
+		} else if parser.current_token_type == TOKEN_LESS_EQUALS || parser.current_token_type == TOKEN_GREATER_EQUALS || parser.current_token_type == TOKEN_LESS_THAN || parser.current_token_type == TOKEN_GREATER_THAN || parser.current_token_type == TOKEN_IS_EQUALS || parser.current_token_type == TOKEN_NOT_EQUALS {
+			CompareExpr := Compare {
+				op: uint8(parser.current_token_type),
+			}
+			parser.ParserEat(parser.current_token_type)
+			Statements = append(Statements, CompareExpr)
 		} else if parser.current_token_type == TOKEN_EOF || parser.current_token_type == TOKEN_DO ||
 		    parser.current_token_type == TOKEN_END || parser.current_token_type == TOKEN_ELIF ||
 			parser.current_token_type == TOKEN_ELSE || parser.current_token_type == TOKEN_EXCEPT {
@@ -685,6 +697,18 @@ func RetTokenAsStr(token uint8) string {
 			tok = "*"
 		case TOKEN_DIV:
 			tok = "/"
+		case TOKEN_LESS_EQUALS:
+			tok = "<="
+		case TOKEN_LESS_THAN:
+			tok = "<"
+		case TOKEN_GREATER_EQUALS:
+			tok = ">="
+		case TOKEN_GREATER_THAN:
+			tok = ">"
+		case TOKEN_IS_EQUALS:
+			tok = "=="
+		case TOKEN_NOT_EQUALS:
+			tok = "!="
 	}
 	return tok
 }
@@ -698,13 +722,9 @@ func (scope *Scope) OpBinop(op uint8) (*Error) {
 	}
 	first := scope.Stack[len(scope.Stack)-1]
 	second := scope.Stack[len(scope.Stack)-2]
-	if _, ok := first.(AsInt); !ok {
-		err := Error{}
-		err.message = fmt.Sprintf("StackIndexError: `%s` expected type <int>.", RetTokenAsStr(op))
-		err.Type = TypeError
-		return &err
-	}
-	if _, ok := second.(AsInt); !ok {
+	_, ok := first.(AsInt);
+	_, ok2 := second.(AsInt);
+	if !ok || !ok2 {
 		err := Error{}
 		err.message = fmt.Sprintf("StackIndexError: `%s` expected type <int>.", RetTokenAsStr(op))
 		err.Type = TypeError
@@ -720,6 +740,61 @@ func (scope *Scope) OpBinop(op uint8) (*Error) {
 	scope.OpDrop()
 	scope.OpDrop()
 	expr := AsInt {
+		val,
+	}
+	scope.OpPush(expr)
+	return nil
+}
+
+func (scope *Scope) OpCompare(op uint8) (*Error) {
+	if len(scope.Stack) < 2 {
+		err := Error{}
+		err.message = fmt.Sprintf("StackIndexError: `%s` expected more than 2 type <int> values in the stack.", RetTokenAsStr(op))
+		err.Type = StackIndexError
+		return &err
+	}
+	first := scope.Stack[len(scope.Stack)-1]
+	second := scope.Stack[len(scope.Stack)-2]
+	var val bool
+	if op == TOKEN_IS_EQUALS {
+		if reflect.TypeOf(first) != reflect.TypeOf(second) {
+			val = false
+		} else {
+			switch first.(type) {
+				case AsStr: val = first.(AsStr).StringValue == second.(AsStr).StringValue
+				case AsInt:  val = second.(AsInt).IntValue == first.(AsInt).IntValue
+				case AsBool: val = second.(AsBool).BoolValue == first.(AsBool).BoolValue
+			}
+		}
+	} else if op == TOKEN_NOT_EQUALS {
+		if reflect.TypeOf(first) != reflect.TypeOf(second) {
+			val = true
+		} else {
+			switch first.(type) {
+				case AsStr: val = first.(AsStr).StringValue != second.(AsStr).StringValue
+				case AsInt:  val = second.(AsInt).IntValue != first.(AsInt).IntValue
+				case AsBool: val = second.(AsBool).BoolValue != first.(AsBool).BoolValue
+			}
+		}
+	} else {
+		_, ok := first.(AsInt);
+		_, ok2 := second.(AsInt);
+		if !ok || !ok2 {
+			err := Error{}
+			err.message = fmt.Sprintf("StackIndexError: `%s` expected type <int>.", RetTokenAsStr(op))
+			err.Type = TypeError
+			return &err
+		}
+		switch op {
+			case TOKEN_LESS_THAN: val = second.(AsInt).IntValue < first.(AsInt).IntValue
+			case TOKEN_LESS_EQUALS: val = second.(AsInt).IntValue <= first.(AsInt).IntValue
+			case TOKEN_GREATER_THAN: val = second.(AsInt).IntValue > first.(AsInt).IntValue
+			case TOKEN_GREATER_EQUALS: val = second.(AsInt).IntValue >= first.(AsInt).IntValue
+		}
+	}
+	scope.OpDrop()
+	scope.OpDrop()
+	expr := AsBool {
 		val,
 	}
 	scope.OpPush(expr)
@@ -841,6 +916,8 @@ func (scope *Scope) VisitorVisit(node AST, IsTry bool) (bool, *Error) {
 				}
 			case AsBinop:
 				err = scope.OpBinop(node.(AsBinop).op)
+			case Compare:
+				err = scope.OpCompare(node.(Compare).op)
 			case AsStatements:
 				scope.VisitorVisit(node.(AsStatements), IsTry)
 			case If:
