@@ -50,41 +50,6 @@ const (
 	TOKEN_EXCEPT
 )
 
-var tokens = []string{
-	TOKEN_EOF:            "TOKEN_EOF",
-	TOKEN_ILLEGAL:        "TOKEN_ILLEGAL",
-	TOKEN_ID:             "TOKEN_ID",
-	TOKEN_STRING:         "TOKEN_STRING",
-	TOKEN_INT:            "TOKEN_INT",
-	TOKEN_PLUS:           "TOKEN_PLUS",
-	TOKEN_MINUS:          "TOKEN_MINUS",
-	TOKEN_END:            "TOKEN_END",
-	TOKEN_DO:             "TOKEN_DO",
-	TOKEN_BOOL:           "TOKEN_BOOL",
-	TOKEN_ELIF:           "TOKEN_ELIF",
-	TOKEN_ELSE:           "TOKEN_ELSE",
-	TOKEN_DIV:            "TOKEN_DIV",
-	TOKEN_MUL:            "TOKEN_MUL",
-	TOKEN_EQUALS:         "TOKEN_EQUALS",
-	TOKEN_IS_EQUALS:      "TOKEN_IS_EQUALS",
-	TOKEN_NOT_EQUALS:     "TOKEN_NOT_EQUALS",
-	TOKEN_LESS_THAN:      "TOKEN_LESS_THAN",
-	TOKEN_GREATER_THAN:   "TOKEN_GREATER_THAN",
-	TOKEN_LESS_EQUALS:    "TOKEN_LESS_EQUALS",
-	TOKEN_GREATER_EQUALS: "TOKEN_GREATER_EQUALS",
-	TOKEN_REM:            "TOKEN_REM",
-	TOKEN_L_BRACKET:      "TOKEN_L_BRACKET",
-	TOKEN_R_BRACKET:      "TOKEN_R_BRACKET",
-	TOKEN_DOT:            "TOKEN_DOT",
-	TOKEN_COMMA:          "TOKEN_COMMA",
-	TOKEN_ERROR:          "TOKEN_ERROR",
-	TOKEN_EXCEPT:         "TOKEN_EXCEPT",
-}
-
-func (token Token) String() string {
-	return tokens[token]
-}
-
 type Position struct {
 	line int
 	column int
@@ -825,16 +790,6 @@ func (scope *Scope) OpPrint() (*Error) {
 	return nil
 }
 
-func (scope *Scope) getBool() (bool) {
-	expr := scope.Stack[len(scope.Stack)-1]
-	if _, ok := expr.(AsBool); !ok {
-		fmt.Println("TypeError: expected <bool> type.")
-		os.Exit(0)
-	}
-	scope.OpDrop()
-	return expr.(AsBool).BoolValue
-}
-
 func (scope *Scope) OpIf(node AST, IsTry bool) (bool, *Error) {
 	scope.VisitorVisit(node.(If).IfOp, IsTry)
 	var BreakValue bool = false
@@ -845,7 +800,15 @@ func (scope *Scope) OpIf(node AST, IsTry bool) (bool, *Error) {
 		err.Type = StackIndexError
 		return BreakValue, &err
 	}
-	if scope.getBool() {
+	expr := scope.Stack[len(scope.Stack)-1]
+	if _, ok := expr.(AsBool); !ok {
+		err := Error{}
+		err.message = "TypeError: if statement expected one or more <bool> type element in the stack."
+		err.Type = StackIndexError
+		return BreakValue, &err
+	}
+	scope.OpDrop()
+	if expr.(AsBool).BoolValue {
 		BreakValue, err = scope.VisitorVisit(node.(If).IfBody, IsTry)
 		if err != nil {
 			return BreakValue, err
@@ -856,11 +819,19 @@ func (scope *Scope) OpIf(node AST, IsTry bool) (bool, *Error) {
 		scope.VisitorVisit(node.(If).ElifOps[i], IsTry)
 		if len(scope.Stack) < 1 {
 			err := Error{}
-			err.message = "StackIndexError: if statement expected one ore more <bool> type element in the stack."
+			err.message = "StackIndexError: if statement expected one or more <bool> type element in the stack."
 			err.Type = StackIndexError
 			return BreakValue, &err
 		}
-		if scope.getBool() {
+		expr := scope.Stack[len(scope.Stack)-1]
+		if _, ok := expr.(AsBool); !ok {
+			err := Error{}
+			err.message = "TypeError: if statement expected one or more <bool> type element in the stack."
+			err.Type = StackIndexError
+			return BreakValue, &err
+		}
+		scope.OpDrop()
+		if expr.(AsBool).BoolValue {
 			BreakValue, err = scope.VisitorVisit(node.(If).ElifBodys[i], IsTry)
 			return BreakValue, err
 		}
@@ -884,15 +855,23 @@ func (scope *Scope) OpFor(node AST, IsTry bool) (*Error) {
 			err.Type = StackIndexError
 			return &err
 		}
-		if !scope.getBool() {
-			break
+		expr := scope.Stack[len(scope.Stack)-1]
+		if _, ok := expr.(AsBool); !ok {
+			err := Error{}
+			err.message = "TypeError: for loop expected one or more <bool> type element in the stack."
+			err.Type = StackIndexError
+			return &err
+		}
+		scope.OpDrop()
+		if !expr.(AsBool).BoolValue {
+			return nil
 		}
 		BreakValue, err = scope.VisitorVisit(node.(For).ForBody, IsTry)
 		if err != nil {
 			return err
 		}
 		if BreakValue {
-			break
+			return nil
 		}
 	}
 	return nil
