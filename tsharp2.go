@@ -50,6 +50,20 @@ const (
 	TOKEN_EXCEPT
 )
 
+var tokens = []string{
+	TOKEN_PLUS:           "+",
+	TOKEN_MINUS:          "-",
+	TOKEN_DIV:            "/",
+	TOKEN_MUL:            "*",
+	TOKEN_IS_EQUALS:      "==",
+	TOKEN_NOT_EQUALS:     "!=",
+	TOKEN_LESS_THAN:      "<",
+	TOKEN_GREATER_THAN:   ">",
+	TOKEN_LESS_EQUALS:    "<=",
+	TOKEN_GREATER_EQUALS: ">=",
+	TOKEN_REM:            "%",
+}
+
 type Position struct {
 	line int
 	column int
@@ -652,30 +666,7 @@ func (scope *Scope) OpDrop() (*Error) {
 }
 
 func RetTokenAsStr(token uint8) string {
-	var tok string
-	switch token {
-		case TOKEN_PLUS:
-			tok = "+"
-		case TOKEN_MINUS:
-			tok = "-"
-		case TOKEN_MUL:
-			tok = "*"
-		case TOKEN_DIV:
-			tok = "/"
-		case TOKEN_LESS_EQUALS:
-			tok = "<="
-		case TOKEN_LESS_THAN:
-			tok = "<"
-		case TOKEN_GREATER_EQUALS:
-			tok = ">="
-		case TOKEN_GREATER_THAN:
-			tok = ">"
-		case TOKEN_IS_EQUALS:
-			tok = "=="
-		case TOKEN_NOT_EQUALS:
-			tok = "!="
-	}
-	return tok
+	return tokens[token]
 }
 
 func (scope *Scope) OpBinop(op uint8) (*Error) {
