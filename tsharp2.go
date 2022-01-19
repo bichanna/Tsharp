@@ -166,6 +166,13 @@ func (lexer *Lexer) Lex() (Position, Token, string) {
 				} else if r == '#' {
 					for {
 						r, _, err := lexer.reader.ReadRune()
+						if err != nil {
+							if err == io.EOF {
+								err = nil
+								return lexer.pos, TOKEN_EOF, "EOF"
+							}
+							panic(err)
+						}
 						if r == '\n' {break}
 						if err != nil {panic(err)}
 						lexer.pos.column++
