@@ -527,7 +527,6 @@ func ParserParseExpr(parser *Parser) AST {
 			if parser.current_token_type != TOKEN_R_BRACKET {
 				ListBody = ParserParse(parser)
 			}
-			// fmt.Println(ListBody)
 			expr = NewList {
 				ListBody,
 			}
@@ -548,7 +547,7 @@ func ParserParse(parser *Parser) AST {
 	}
 	for {
 		if parser.current_token_type == TOKEN_ID {
-			if parser.current_token_value == "print" || parser.current_token_value == "break" ||
+			if parser.current_token_value == "print" || parser.current_token_value == "break" || parser.current_token_value == "append" ||
 			   parser.current_token_value == "drop"  || parser.current_token_value == "dup" || parser.current_token_value == "inc" || parser.current_token_value == "dec"  {
 				name := parser.current_token_value
 				IdExpr := AsId{name}
@@ -1000,6 +999,29 @@ func (scope *Scope) OpDup() (*Error) {
 	return nil
 }
 
+func (scope *Scope) OpAppend() (*Error) {
+	if len(scope.Stack) < 2 {
+		err := Error{}
+		err.message = "StackIndexError: `append` expected two or more element in the stack."
+		err.Type = StackIndexError
+		return &err
+	}
+	if _, ok := scope.Stack[len(scope.Stack)-2].(AsList); !ok {
+		err := Error{}
+		err.message = "TypeError: `append` expected <list> type element in the stack."
+		err.Type = TypeError
+		return &err
+	}
+	a := append(scope.Stack[len(scope.Stack)-2].(AsList).ListArgs, scope.Stack[len(scope.Stack)-1])
+	scope.OpDrop()
+	scope.OpDrop()
+	var NewList AST = AsList {
+		a,
+	}
+	scope.OpPush(NewList)
+	return nil
+}
+
 
 // -----------------------------
 // --------- Visitor -----------
@@ -1026,6 +1048,8 @@ func (scope *Scope) VisitorVisit(node AST, IsTry bool) (bool, *Error) {
 					err = scope.OpDec()
 				} else if node.(AsId).name == "dup" {
 					err = scope.OpDup()
+				} else if node.(AsId).name == "append" {
+					err = scope.OpAppend()
 				}
 			case AsBinop:
 				err = scope.OpBinop(node.(AsBinop).op)
