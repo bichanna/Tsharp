@@ -48,6 +48,8 @@ const (
 	TOKEN_COMMA
 	TOKEN_ERROR
 	TOKEN_EXCEPT
+	TOKEN_OR
+	TOKEN_AND
 )
 
 var tokens = []string{
@@ -62,6 +64,8 @@ var tokens = []string{
 	TOKEN_LESS_EQUALS:    "<=",
 	TOKEN_GREATER_EQUALS: ">=",
 	TOKEN_REM:            "%",
+	TOKEN_OR:             "||",
+	TOKEN_AND:            "&&",
 }
 
 type Position struct {
@@ -142,6 +146,44 @@ func (lexer *Lexer) Lex() (Position, Token, string) {
 					} else {
 						return lexer.pos, TOKEN_LESS_THAN, "<"
 					}
+				} else if r == '|' {
+					r, _, err := lexer.reader.ReadRune()
+					if err != nil {
+						if err == io.EOF {
+							fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`.", lexer.pos.line, lexer.pos.column, string(r)))
+							os.Exit(0)
+						}
+						err = nil
+						fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`.", lexer.pos.line, lexer.pos.column, string(r)))
+						os.Exit(0)
+						panic(err)
+					}
+					if r == '|' {
+						lexer.pos.column++
+						return lexer.pos, TOKEN_OR, "||"
+					} else {
+						fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`.", lexer.pos.line, lexer.pos.column, string(r)))
+						os.Exit(0)
+					}
+				} else if r == '&' {
+					r, _, err := lexer.reader.ReadRune()
+					if err != nil {
+						if err == io.EOF {
+							fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`.", lexer.pos.line, lexer.pos.column, string(r)))
+							os.Exit(0)
+						}
+						err = nil
+						fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`.", lexer.pos.line, lexer.pos.column, string(r)))
+						os.Exit(0)
+						panic(err)
+					}
+					if r == '&' {
+						lexer.pos.column++
+						return lexer.pos, TOKEN_AND, "&&"
+					} else {
+						fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`.", lexer.pos.line, lexer.pos.column, string(r)))
+						os.Exit(0)
+					}
 				} else if r == '>' {
 					r, _, err := lexer.reader.ReadRune()
 					if err != nil {
@@ -219,7 +261,7 @@ func (lexer *Lexer) Lex() (Position, Token, string) {
 					return startPos, TOKEN_STRING, val
 				} else {
 					fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`.", lexer.pos.line, lexer.pos.column, string(r)))
-					os.Exit(0) 
+					os.Exit(0)
 				}
         }
 	}
@@ -642,7 +684,7 @@ func ParserParse(parser *Parser) AST {
 			}
 			parser.ParserEat(parser.current_token_type)
 			Statements = append(Statements, BinopExpr)
-		} else if parser.current_token_type == TOKEN_LESS_EQUALS || parser.current_token_type == TOKEN_GREATER_EQUALS || parser.current_token_type == TOKEN_LESS_THAN || parser.current_token_type == TOKEN_GREATER_THAN || parser.current_token_type == TOKEN_IS_EQUALS || parser.current_token_type == TOKEN_NOT_EQUALS {
+		} else if parser.current_token_type == TOKEN_LESS_EQUALS || parser.current_token_type == TOKEN_GREATER_EQUALS || parser.current_token_type == TOKEN_LESS_THAN || parser.current_token_type == TOKEN_GREATER_THAN || parser.current_token_type == TOKEN_IS_EQUALS || parser.current_token_type == TOKEN_NOT_EQUALS || parser.current_token_type == TOKEN_OR || parser.current_token_type == TOKEN_AND {
 			CompareExpr := Compare {
 				op: uint8(parser.current_token_type),
 			}
@@ -745,7 +787,7 @@ func (scope *Scope) OpBinop(op uint8) (*Error) {
 func (scope *Scope) OpCompare(op uint8) (*Error) {
 	if len(scope.Stack) < 2 {
 		err := Error{}
-		err.message = fmt.Sprintf("StackIndexError: `%s` expected more than 2 <int> type elements in the stack.", RetTokenAsStr(op))
+		err.message = fmt.Sprintf("StackIndexError: `%s` expected more than 2 elements in the stack.", RetTokenAsStr(op))
 		err.Type = StackIndexError
 		return &err
 	}
@@ -772,12 +814,25 @@ func (scope *Scope) OpCompare(op uint8) (*Error) {
 				case AsBool: val = second.(AsBool).BoolValue != first.(AsBool).BoolValue
 			}
 		}
+	} else if op == TOKEN_OR || op == TOKEN_AND {
+		_, ok := first.(AsBool);
+		_, ok2 := second.(AsBool);
+		if !ok || !ok2 {
+			err := Error{}
+			err.message = fmt.Sprintf("StackIndexError: `%s` expected 2 <bool> type elements in the stack.", RetTokenAsStr(op))
+			err.Type = TypeError
+			return &err
+		}
+		switch op {
+			case TOKEN_OR: val = second.(AsBool).BoolValue || first.(AsBool).BoolValue
+			case TOKEN_AND: val = second.(AsBool).BoolValue && first.(AsBool).BoolValue
+		}
 	} else {
 		_, ok := first.(AsInt);
 		_, ok2 := second.(AsInt);
 		if !ok || !ok2 {
 			err := Error{}
-			err.message = fmt.Sprintf("StackIndexError: `%s` expected <int> type.", RetTokenAsStr(op))
+			err.message = fmt.Sprintf("StackIndexError: `%s` expected 2 <int> type elements in the stack.", RetTokenAsStr(op))
 			err.Type = TypeError
 			return &err
 		}
