@@ -98,8 +98,8 @@ func (lexer *Lexer) Lex() (Position, Token, string) {
 			case '/': return lexer.pos, TOKEN_DIV, "/"
 			case '*': return lexer.pos, TOKEN_MUL, "*"
 			case '%': return lexer.pos, TOKEN_REM, "%"
-			case '[': return lexer.pos, TOKEN_L_BRACKET, "["
-			case ']': return lexer.pos, TOKEN_R_BRACKET, "]"
+			case '{': return lexer.pos, TOKEN_L_BRACKET, "{"
+			case '}': return lexer.pos, TOKEN_R_BRACKET, "}"
 			case ',': return lexer.pos, TOKEN_COMMA, ","
 			case '.': return lexer.pos, TOKEN_DOT, "."
 			default:
@@ -363,6 +363,18 @@ type AsBool struct {
 
 func (node AsBool) node() {}
 
+type NewList struct {
+	ListBody AST
+}
+
+func (node NewList) node() {}
+
+type AsList struct {
+	ListArgs []AST
+}
+
+func (node AsList) node() {}
+
 type AsId struct {
 	name string
 }
@@ -509,6 +521,17 @@ func ParserParseExpr(parser *Parser) AST {
 			parser.ParserEat(TOKEN_BOOL)
 		case TOKEN_ERROR:
 			expr = ParserParseError(parser)
+		case TOKEN_L_BRACKET:
+			parser.ParserEat(TOKEN_L_BRACKET)
+			var ListBody AST
+			if parser.current_token_type != TOKEN_R_BRACKET {
+				ListBody = ParserParse(parser)
+			}
+			// fmt.Println(ListBody)
+			expr = NewList {
+				ListBody,
+			}
+			parser.ParserEat(TOKEN_R_BRACKET)
 		default:
 			fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`.", parser.line, parser.column, parser.current_token_value))
 			os.Exit(0)
@@ -605,13 +628,13 @@ func ParserParse(parser *Parser) AST {
 				os.Exit(0)
 			}
 		} else if parser.current_token_type == TOKEN_INT  || parser.current_token_type == TOKEN_STRING ||
-		    parser.current_token_type == TOKEN_BOOL || parser.current_token_type == TOKEN_ERROR {
+		    parser.current_token_type == TOKEN_BOOL || parser.current_token_type == TOKEN_ERROR || parser.current_token_type == TOKEN_L_BRACKET {
 			expr := ParserParseExpr(parser)
 			PushExpr := AsPush{
 				value: expr,
 			}
 			Statements = append(Statements, PushExpr)
-		} else if parser.current_token_type == TOKEN_PLUS || parser.current_token_type == TOKEN_MINUS || parser.current_token_type == TOKEN_MUL || parser.current_token_type == TOKEN_DIV {
+		} else if parser.current_token_type == TOKEN_PLUS || parser.current_token_type == TOKEN_MINUS || parser.current_token_type == TOKEN_MUL || parser.current_token_type == TOKEN_DIV || parser.current_token_type == TOKEN_REM {
 			BinopExpr := AsBinop {
 				op: uint8(parser.current_token_type),
 			}
@@ -625,7 +648,7 @@ func ParserParse(parser *Parser) AST {
 			Statements = append(Statements, CompareExpr)
 		} else if parser.current_token_type == TOKEN_EOF || parser.current_token_type == TOKEN_DO ||
 		    parser.current_token_type == TOKEN_END || parser.current_token_type == TOKEN_ELIF ||
-			parser.current_token_type == TOKEN_ELSE || parser.current_token_type == TOKEN_EXCEPT {
+			parser.current_token_type == TOKEN_ELSE || parser.current_token_type == TOKEN_EXCEPT || parser.current_token_type == TOKEN_R_BRACKET {
 			break
 		} else {
 			fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`.", parser.line, parser.column, parser.current_token_value))
@@ -647,18 +670,25 @@ type Scope struct {
 }
 
 func InitScope() *Scope {
-	stack := []AST{}
-	variables := map[string]AST{}
-	blocks := map[string][]AST{}
-	return &Scope{
-		Stack: stack,
-		Variables: variables,
-		Blocks: blocks,
+	return &Scope{}
+}
+
+func CreateAsList(node AST) (AST) {
+	scope := InitScope()
+	scope.VisitorVisit(node.(NewList).ListBody, false)
+	var expr AST = AsList {
+		scope.Stack,
 	}
+	return expr
 }
 
 func (scope *Scope) OpPush(node AST) {
-	scope.Stack = append(scope.Stack, node)
+	_, ok := node.(NewList);
+	if ok {
+		scope.Stack = append(scope.Stack, CreateAsList(node))
+	} else {
+		scope.Stack = append(scope.Stack, node)
+	}
 }
 
 func (scope *Scope) OpDrop() (*Error) {
@@ -699,6 +729,7 @@ func (scope *Scope) OpBinop(op uint8) (*Error) {
 		case TOKEN_MINUS:  val = second.(AsInt).IntValue - first.(AsInt).IntValue
 		case TOKEN_MUL: val = second.(AsInt).IntValue * first.(AsInt).IntValue
 		case TOKEN_DIV: val = second.(AsInt).IntValue / first.(AsInt).IntValue
+		case TOKEN_REM: val = second.(AsInt).IntValue % first.(AsInt).IntValue
 	}
 	scope.OpDrop()
 	scope.OpDrop()
@@ -764,6 +795,24 @@ func (scope *Scope) OpCompare(op uint8) (*Error) {
 	return nil
 }
 
+func PrintAsList(node AST) {
+	print("{ ")
+	for i := 0; i < len(node.(AsList).ListArgs); i++ {
+		switch node.(AsList).ListArgs[i].(type) {
+			case AsStr:
+				print(node.(AsList).ListArgs[i].(AsStr).StringValue)
+			case AsInt:
+				print(strconv.Itoa(node.(AsList).ListArgs[i].(AsInt).IntValue))
+			case AsBool:
+				print(node.(AsList).ListArgs[i].(AsBool).BoolValue)
+			case AsList:
+				PrintAsList(node.(AsList).ListArgs[i])
+		}
+		print(" ")
+	}
+	print("}")
+}
+
 func (scope *Scope) OpPrint() (*Error) {
 	if len(scope.Stack) < 1 {
 		err := Error{}
@@ -783,6 +832,9 @@ func (scope *Scope) OpPrint() (*Error) {
 				case ImportError: fmt.Println("<error 'ImportError'>")
 				default: fmt.Println(fmt.Sprintf("unexpected error <%d>", expr.(AsError).err))
 			}
+		case AsList:
+			PrintAsList(expr)
+			fmt.Println()
 	}
 	scope.OpDrop()
 	return nil
