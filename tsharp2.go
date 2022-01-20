@@ -1074,7 +1074,7 @@ func main() {
 
 	file, err := os.Open(os.Args[1])
 	if err != nil {
-		fmt.Println(fmt.Sprintf("Error: invalid file name '%s'.", os.Args[1]))
+		fmt.Println(fmt.Sprintf("Error: invalid file name `%s`.", os.Args[1]))
 
 		whilte := color.New(color.FgWhite)
 
