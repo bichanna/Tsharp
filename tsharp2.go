@@ -217,6 +217,9 @@ func (lexer *Lexer) Lex() (Position, Token, string) {
 					val := lexer.lexStringSingle()
 					r, _, err = lexer.reader.ReadRune()
 					return startPos, TOKEN_STRING, val
+				} else {
+					fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`.", lexer.pos.line, lexer.pos.column, string(r)))
+					os.Exit(0) 
 				}
         }
 	}
