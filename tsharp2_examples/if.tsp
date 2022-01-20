@@ -1,14 +1,16 @@
 
-if true do
+if 3 2 < do
     "Hello World!" print
-elif true do
+elif 2 2 != do
     "Hello World!" print
-elif true do
+elif 2 2 > do
     "Hello World!" print
-elif true true || do
+elif 2 1 == do
     "Hello World!" print
-elif true true && do
+elif 1 1 == 1 1 == && do
     "Hello World!" print
 else
     "Hello World!" print
 end
+
+
