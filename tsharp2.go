@@ -753,7 +753,9 @@ func InitScope() *Scope {
 
 func CreateAsList(node AST) (AST) {
 	scope := InitScope()
-	scope.VisitorVisit(node.(NewList).ListBody, false)
+	if node.(NewList).ListBody != nil {
+		scope.VisitorVisit(node.(NewList).ListBody, false)
+	}
 	var expr AST = AsList {
 		scope.Stack,
 	}
