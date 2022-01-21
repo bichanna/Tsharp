@@ -241,7 +241,7 @@ func (lexer *Lexer) Lex() (Position, Token, string) {
 						return startPos, TOKEN_ELSE, val
 					} else if val == "elif" {
 						return startPos, TOKEN_ELIF, val
-					} else if val == "NameError" || val == "StackIndexError" || val == "TypeError" || val == "ImportError" {
+					} else if val == "NameError" || val == "StackIndexError" || val == "TypeError" || val == "ImportError" || val == "IndexError" {
 						return startPos, TOKEN_ERROR, val
 					} else if val == "except" {
 						return startPos, TOKEN_EXCEPT, val
@@ -377,6 +377,7 @@ const (
 	StackIndexError
 	NameError
 	TypeError
+	IndexError
 	ImportError
 )
 
@@ -537,6 +538,8 @@ func ParserParseError(parser *Parser) AST {
 		err = ImportError
 	} else if parser.current_token_value == "TypeError" {
 		err = TypeError
+	} else if parser.current_token_value == "IndexError" {
+		err = IndexError
 	}
 	parser.ParserEat(TOKEN_ERROR)
 	ErrorExpr := AsError {
@@ -592,8 +595,8 @@ func ParserParse(parser *Parser) AST {
 	}
 	for {
 		if parser.current_token_type == TOKEN_ID {
-			if parser.current_token_value == "print" || parser.current_token_value == "break" || parser.current_token_value == "append" ||
-			   parser.current_token_value == "drop"  || parser.current_token_value == "dup" || parser.current_token_value == "inc" || parser.current_token_value == "dec"  {
+			if parser.current_token_value == "print" || parser.current_token_value == "break" || parser.current_token_value == "append" || parser.current_token_value == "remove" ||
+			   parser.current_token_value == "drop"  || parser.current_token_value == "dup" || parser.current_token_value == "inc" || parser.current_token_value == "dec" || parser.current_token_value == "replace" || parser.current_token_value == "read" {
 				name := parser.current_token_value
 				IdExpr := AsId{name}
 				parser.ParserEat(TOKEN_ID)
@@ -1080,6 +1083,129 @@ func (scope *Scope) OpAppend() (*Error) {
 	return nil
 }
 
+func (scope *Scope) OpRead() (*Error) {
+	if len(scope.Stack) < 2 {
+		err := Error{}
+		err.message = "StackIndexError: `read` expected two or more element in the stack."
+		err.Type = StackIndexError
+		return &err
+	}
+	visitedList := scope.Stack[len(scope.Stack)-2]
+	visitedIndex := scope.Stack[len(scope.Stack)-1]
+	if _, ok := visitedIndex.(AsInt); !ok {
+		err := Error{}
+		err.message = "TypeError: `read` index expected <int> type element in the stack."
+		err.Type = TypeError
+		return &err
+	}
+	_, ok := visitedList.(AsStr);
+	_, ok2 := visitedList.(AsList);
+	if !ok && !ok2 {
+		err := Error{}
+		err.message = "TypeError: `read` expected <list> or <string> type element in the stack."
+		err.Type = TypeError
+		return &err
+	}
+	scope.OpDrop()
+	if _, ok := visitedList.(AsList); ok {
+		if len(visitedList.(AsList).ListArgs) <= visitedIndex.(AsInt).IntValue {
+			err := Error{}
+			err.message = "IndexError: `read` type <list> element index out of range."
+			err.Type = IndexError
+			return &err
+		}
+		scope.OpPush(visitedList.(AsList).ListArgs[int(visitedIndex.(AsInt).IntValue)])
+	} else {
+		if len(visitedList.(AsStr).StringValue) <= visitedIndex.(AsInt).IntValue {
+			err := Error{}
+			err.message = "IndexError: `read` type <string> element index out of range."
+			err.Type = IndexError
+			return &err
+		}
+		StringValue := string([]rune(visitedList.(AsStr).StringValue)[int(visitedIndex.(AsInt).IntValue)])
+		var StrExpr AST = AsStr {
+			StringValue,
+		}
+		scope.OpPush(StrExpr)
+	}
+	return nil
+}
+
+func (scope *Scope) OpReplace() (*Error) {
+	if len(scope.Stack) < 3 {
+		err := Error{}
+		err.message = "StackIndexError: `replace` expected three or more element in the stack."
+		err.Type = StackIndexError
+		return &err
+	}
+	visitedList := scope.Stack[len(scope.Stack)-3]
+	visitedValue := scope.Stack[len(scope.Stack)-2]
+	visitedIndex := scope.Stack[len(scope.Stack)-1]
+	if _, ok := visitedIndex.(AsInt); !ok {
+		err := Error{}
+		err.message = "TypeError: `replace` index expected <int> type element in the stack."
+		err.Type = TypeError
+		return &err
+	}
+	if _, ok := visitedList.(AsList); !ok {
+		err := Error{}
+		err.message = "TypeError: `replace` expected <list> type element in the stack."
+		err.Type = TypeError
+		return &err
+	}
+	if len(visitedList.(AsList).ListArgs) <= visitedIndex.(AsInt).IntValue {
+		err := Error{}
+		err.message = "IndexError: `replace` type <list> element index out of range."
+		err.Type = IndexError
+		return &err
+	}
+	visitedList.(AsList).ListArgs[int(visitedIndex.(AsInt).IntValue)] = visitedValue
+	scope.OpDrop()
+	scope.OpDrop()
+	scope.OpDrop()
+	scope.OpPush(visitedList)
+	return nil
+}
+
+func (scope *Scope) OpRemove() (*Error) {
+	if len(scope.Stack) < 2 {
+		err := Error{}
+		err.message = "StackIndexError: `remove` expected two or more element in the stack."
+		err.Type = StackIndexError
+		return &err
+	}
+	visitedList := scope.Stack[len(scope.Stack)-2]
+	visitedIndex := scope.Stack[len(scope.Stack)-1]
+	if _, ok := visitedIndex.(AsInt); !ok {
+		err := Error{}
+		err.message = "TypeError: `remove` index expected <int> type element in the stack."
+		err.Type = TypeError
+		return &err
+	}
+	if _, ok := visitedList.(AsList); !ok {
+		err := Error{}
+		err.message = "TypeError: `remove` expected <list> type element in the stack."
+		err.Type = TypeError
+		return &err
+	}
+	if len(visitedList.(AsList).ListArgs) <= visitedIndex.(AsInt).IntValue {
+		err := Error{}
+		err.message = "IndexError: `remove` type <list> element index out of range."
+		err.Type = IndexError
+		return &err
+	}
+	
+	NewList := append(visitedList.(AsList).ListArgs[:int(visitedIndex.(AsInt).IntValue)], visitedList.(AsList).ListArgs[int(visitedIndex.(AsInt).IntValue)+1:]...)
+    var ListExpr AST = AsList {
+		NewList,
+	}
+	visitedList = nil
+	scope.OpDrop()
+	scope.OpDrop()
+	scope.OpPush(ListExpr)
+	return nil
+}
+
 
 // -----------------------------
 // --------- Visitor -----------
@@ -1108,6 +1234,12 @@ func (scope *Scope) VisitorVisit(node AST, IsTry bool) (bool, *Error) {
 					err = scope.OpDup()
 				} else if node.(AsId).name == "append" {
 					err = scope.OpAppend()
+				} else if node.(AsId).name == "read" {
+					err = scope.OpRead()
+				} else if node.(AsId).name == "replace" {
+					err = scope.OpReplace()
+				} else if node.(AsId).name == "remove" {
+					err = scope.OpRemove()
 				}
 			case AsBinop:
 				err = scope.OpBinop(node.(AsBinop).op)
