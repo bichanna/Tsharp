@@ -890,6 +890,8 @@ func (scope *Scope) OpPrint() (*Error) {
 				case NameError: fmt.Println("<error 'NameError'>")
 				case StackIndexError: fmt.Println("<error 'StackIndexError'>")
 				case ImportError: fmt.Println("<error 'ImportError'>")
+				case IndexError: fmt.Println("<error 'IndexError'>")
+				case TypeError: fmt.Println("<error 'TypeError'>")
 				default: fmt.Println(fmt.Sprintf("unexpected error <%d>", expr.(AsError).err))
 			}
 		case AsList:
@@ -1194,7 +1196,7 @@ func (scope *Scope) OpRemove() (*Error) {
 		err.Type = IndexError
 		return &err
 	}
-	
+
 	NewList := append(visitedList.(AsList).ListArgs[:int(visitedIndex.(AsInt).IntValue)], visitedList.(AsList).ListArgs[int(visitedIndex.(AsInt).IntValue)+1:]...)
     var ListExpr AST = AsList {
 		NewList,
