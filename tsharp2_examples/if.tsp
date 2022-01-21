@@ -9,6 +9,8 @@ elif 2 1 == do
     "Hello World!" print
 elif 1 1 == 1 1 == && do
     "Hello World!" print
+elif 1 1 == 1 1 == || do
+    "Hello World!" print
 else
     "Hello World!" print
 end
