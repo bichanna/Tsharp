@@ -451,6 +451,18 @@ type AsPush struct {
 
 func (node AsPush) node() {}
 
+type Vardef struct {
+	Name string
+}
+
+func (node Vardef) node() {}
+
+type Var struct {
+	Name string
+}
+
+func (node Var) node() {}
+
 type If struct {
 	IfOp AST
 	IfBody AST
@@ -579,6 +591,11 @@ func ParserParseExpr(parser *Parser) AST {
 				ListBody,
 			}
 			parser.ParserEat(TOKEN_R_BRACKET)
+		case TOKEN_ID:
+			expr = Var {
+				parser.current_token_value,
+			}
+			parser.ParserEat(TOKEN_ID)
 		default:
 			fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`.", parser.line, parser.column, parser.current_token_value))
 			os.Exit(0)
@@ -595,7 +612,7 @@ func ParserParse(parser *Parser) AST {
 	}
 	for {
 		if parser.current_token_type == TOKEN_ID {
-			if parser.current_token_value == "print" || parser.current_token_value == "break" || parser.current_token_value == "append" || parser.current_token_value == "remove" ||
+			if parser.current_token_value == "print" || parser.current_token_value == "break" || parser.current_token_value == "append" || parser.current_token_value == "remove" || parser.current_token_value == "swap" ||
 			   parser.current_token_value == "drop"  || parser.current_token_value == "dup" || parser.current_token_value == "inc" || parser.current_token_value == "dec" || parser.current_token_value == "replace" || parser.current_token_value == "read" {
 				name := parser.current_token_value
 				IdExpr := AsId{name}
@@ -671,8 +688,11 @@ func ParserParse(parser *Parser) AST {
 				}
 				Statements = append(Statements, TryExpr)
 			} else {
-				fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`.", parser.line, parser.column, parser.current_token_value))
-				os.Exit(0)
+				expr := ParserParseExpr(parser)
+				PushExpr := AsPush{
+					value: expr,
+				}
+				Statements = append(Statements, PushExpr)
 			}
 		} else if parser.current_token_type == TOKEN_INT  || parser.current_token_type == TOKEN_STRING ||
 		    parser.current_token_type == TOKEN_BOOL || parser.current_token_type == TOKEN_ERROR || parser.current_token_type == TOKEN_L_BRACKET {
@@ -681,6 +701,13 @@ func ParserParse(parser *Parser) AST {
 				value: expr,
 			}
 			Statements = append(Statements, PushExpr)
+		} else if parser.current_token_type == TOKEN_EQUALS {
+			parser.ParserEat(TOKEN_EQUALS)
+			VardefExpr := Vardef {
+				Name: parser.current_token_value,
+			}
+			parser.ParserEat(TOKEN_ID)
+			Statements = append(Statements, VardefExpr)
 		} else if parser.current_token_type == TOKEN_PLUS || parser.current_token_type == TOKEN_MINUS || parser.current_token_type == TOKEN_MUL || parser.current_token_type == TOKEN_DIV || parser.current_token_type == TOKEN_REM {
 			BinopExpr := AsBinop {
 				op: uint8(parser.current_token_type),
@@ -717,7 +744,11 @@ type Scope struct {
 }
 
 func InitScope() *Scope {
-	return &Scope{}
+	return &Scope{
+		[]AST{},
+		map[string]AST{},
+		map[string][]AST{},
+	}
 }
 
 func CreateAsList(node AST) (AST) {
@@ -729,23 +760,51 @@ func CreateAsList(node AST) (AST) {
 	return expr
 }
 
-func (scope *Scope) OpPush(node AST) {
-	_, ok := node.(NewList);
-	if ok {
+func (scope *Scope) OpPush(node AST) (*Error) {
+	_, IsList := node.(NewList);
+	_, IsVar := node.(Var);
+	if IsList {
 		scope.Stack = append(scope.Stack, CreateAsList(node))
+	} else if IsVar {
+		if _, ok := scope.Variables[node.(Var).Name]; ok {
+			VarValue := scope.Variables[node.(Var).Name]
+			scope.Stack = append(scope.Stack, VarValue)
+		} else {
+			err := Error{}
+			err.message = fmt.Sprintf("NameError: undefined variable `%s`", node.(Var).Name)
+			err.Type = NameError
+			return &err
+		}
 	} else {
 		scope.Stack = append(scope.Stack, node)
 	}
+	return nil
 }
 
 func (scope *Scope) OpDrop() (*Error) {
 	if len(scope.Stack) < 1 {
 		err := Error{}
-		err.message = "StackIndexError: `drop` expected more than one element in the stack."
+		err.message = "StackIndexError: `drop` expected one or more element in the stack."
 		err.Type = StackIndexError
 		return &err
 	}
 	scope.Stack = scope.Stack[:len(scope.Stack)-1]
+	return nil
+}
+
+func (scope *Scope) OpSwap() (*Error) {
+	if len(scope.Stack) < 2 {
+		err := Error{}
+		err.message = "StackIndexError: `swap` expected two or more element in the stack."
+		err.Type = StackIndexError
+		return &err
+	}
+	first := scope.Stack[len(scope.Stack)-1]
+	second := scope.Stack[len(scope.Stack)-2]
+	scope.OpDrop()
+	scope.OpDrop()
+	scope.OpPush(first)
+	scope.OpPush(second)
 	return nil
 }
 
@@ -1208,6 +1267,19 @@ func (scope *Scope) OpRemove() (*Error) {
 	return nil
 }
 
+func (scope *Scope) OpVardef(name string) (*Error) {
+	if len(scope.Stack) < 1 {
+		err := Error{}
+		err.message = fmt.Sprintf("StackIndexError: variable `%s` definiton expected one or more element in the stack.", name)
+		err.Type = StackIndexError
+		return &err
+	}
+	VarValue := scope.Stack[len(scope.Stack)-1]
+	scope.Variables[name] = VarValue
+	scope.OpDrop()
+	return nil
+}
+
 
 // -----------------------------
 // --------- Visitor -----------
@@ -1220,7 +1292,7 @@ func (scope *Scope) VisitorVisit(node AST, IsTry bool) (bool, *Error) {
 		node := node.(AsStatements)[i]
 		switch node.(type) {
 			case AsPush:
-				scope.OpPush(node.(AsPush).value)
+				err = scope.OpPush(node.(AsPush).value)
 			case AsId:
 				if node.(AsId).name == "print" {
 					err = scope.OpPrint()
@@ -1228,6 +1300,8 @@ func (scope *Scope) VisitorVisit(node AST, IsTry bool) (bool, *Error) {
 					BreakValue = true
 				} else if node.(AsId).name == "drop" {
 					err = scope.OpDrop()
+				} else if node.(AsId).name == "swap" {
+					err = scope.OpSwap()
 				} else if node.(AsId).name == "inc" {
 					err = scope.OpInc()
 				} else if node.(AsId).name == "dec" {
@@ -1245,6 +1319,8 @@ func (scope *Scope) VisitorVisit(node AST, IsTry bool) (bool, *Error) {
 				}
 			case AsBinop:
 				err = scope.OpBinop(node.(AsBinop).op)
+			case Vardef:
+				err = scope.OpVardef(node.(Vardef).Name)
 			case Compare:
 				err = scope.OpCompare(node.(Compare).op)
 			case AsStatements:
