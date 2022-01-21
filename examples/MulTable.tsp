@@ -1,4 +1,4 @@
-# https://twitter.com/mio2561 created this program.
+
 
 block dclone do
     dup -> tmpa
