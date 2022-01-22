@@ -129,6 +129,13 @@ end
 2 3 <= print
 3 2 >= print
 ```
+```pascal
+11 -> N
+
+if N { 20 30 11 42 28 91 } in do
+    "Hello World!" print
+end
+```
 
 ## Dup
 ```pascal
