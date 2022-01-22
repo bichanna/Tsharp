@@ -6,3 +6,4 @@ tsharp
 ignore
 *.out
 tsharp2
+main.tsp
