@@ -69,10 +69,10 @@ drop drop
     0 for dup length 1 - < do
         dup -> j
         j 1 + -> i
-        if arr j read swap i read swap drop > do
+        if arr j read arr i read > do
             arr j read -> x
-            i read -> y
-            y j replace
+            arr i read -> y
+            arr y j replace
             x i replace
             drop
         end 
