@@ -979,7 +979,7 @@ func (scope *Scope) OpCompare(op uint8) (*Error) {
 }
 
 func PrintAsList(node AST) {
-	print("{ ")
+	print("{")
 	for i := 0; i < len(node.(AsList).ListArgs); i++ {
 		switch node.(AsList).ListArgs[i].(type) {
 			case AsStr:
@@ -995,7 +995,7 @@ func PrintAsList(node AST) {
 			print(", ")
 		}
 	}
-	print(" }")
+	print("}")
 }
 
 func (scope *Scope) OpPrint() (*Error) {
