@@ -924,6 +924,7 @@ func (scope *Scope) OpCompare(op uint8) (*Error) {
 				case AsBool: val = second.(AsBool).BoolValue == first.(AsBool).BoolValue
 				case AsType: val = second.(AsType).TypeValue == first.(AsType).TypeValue
 				case AsError: val = second.(AsError).err == first.(AsError).err
+				case AsList: val = reflect.DeepEqual(second.(AsList).ListArgs, first.(AsList).ListArgs)
 			}
 		}
 	} else if op == TOKEN_NOT_EQUALS {
@@ -935,7 +936,8 @@ func (scope *Scope) OpCompare(op uint8) (*Error) {
 				case AsInt:  val = second.(AsInt).IntValue != first.(AsInt).IntValue
 				case AsBool: val = second.(AsBool).BoolValue != first.(AsBool).BoolValue
 				case AsType: val = second.(AsType).TypeValue != first.(AsType).TypeValue
-				case AsError: val = second.(AsError).err == first.(AsError).err
+				case AsError: val = second.(AsError).err != first.(AsError).err
+				case AsList: val = !reflect.DeepEqual(second.(AsList).ListArgs, first.(AsList).ListArgs)
 			}
 		}
 	} else if op == TOKEN_OR || op == TOKEN_AND {
