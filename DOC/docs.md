@@ -3,7 +3,7 @@
 ## Introduction
 
 T# is a Stack-based programming language designed for building software.
-It's similar to Porth and Forth.
+It's like Porth, Forth.
 
 ## Install & Run
 ```bash
