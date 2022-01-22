@@ -427,6 +427,12 @@ type AsId struct {
 
 func (node AsId) node() {}
 
+type Import struct {
+	FileName string
+}
+
+func (node Import) node() {}
+
 type Compare struct {
 	op uint8
 }
@@ -662,6 +668,13 @@ func ParserParse(parser *Parser) AST {
 					name,
 				}
 				Statements = append(Statements, CallBlockExpr)
+			} else if parser.current_token_value == "import" {
+				parser.ParserEat(TOKEN_ID)
+				ImportExpr := Import {
+					parser.current_token_value,
+				}
+				parser.ParserEat(TOKEN_STRING)
+				Statements = append(Statements, ImportExpr)
 			} else if parser.current_token_value == "if" {
 				parser.ParserEat(TOKEN_ID)
 				IfOp := ParserParse(parser)
@@ -1500,6 +1513,24 @@ func (scope *Scope) OpCallBlock(name string) *Error {
 	return nil
 }
 
+func (scope *Scope) OpImport(FileName string) (*Error) {
+	if _, err := os.Stat(FileName); os.IsNotExist(err) {
+		err := Error{}
+		err.message = fmt.Sprintf("ImportError: invalid file name `%s`.", FileName)
+		err.Type = ImportError
+		return &err
+	}
+	file, err := os.Open(FileName)
+	if err != nil {
+		panic(err)
+	}
+	lexer := LexerInit(file)
+	parser := ParserInit(lexer)
+	ast := ParserParse(parser)
+	scope.VisitorVisit(ast, false)
+	return nil
+}
+
 // -----------------------------
 // --------- Visitor -----------
 // -----------------------------
@@ -1558,6 +1589,8 @@ func (scope *Scope) VisitorVisit(node AST, IsTry bool) (bool, *Error) {
 				err = scope.OpBlockdef(node)
 			case CallBlock:
 				err = scope.OpCallBlock(node.(CallBlock).Name)
+			case Import:
+				err = scope.OpImport(node.(Import).FileName)
 			case Compare:
 				err = scope.OpCompare(node.(Compare).op)
 			case AsStatements:
