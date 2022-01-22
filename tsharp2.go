@@ -636,8 +636,8 @@ func ParserParse(parser *Parser) AST {
 	}
 	for {
 		if parser.current_token_type == TOKEN_ID {
-			if parser.current_token_value == "print" || parser.current_token_value == "break" || parser.current_token_value == "append" || parser.current_token_value == "remove" || parser.current_token_value == "swap" || parser.current_token_value == "in" || parser.current_token_value == "typeof" ||
-			   parser.current_token_value == "drop"  || parser.current_token_value == "dup" || parser.current_token_value == "inc" || parser.current_token_value == "dec" || parser.current_token_value == "replace" || parser.current_token_value == "read" || parser.current_token_value == "puts" {
+			if parser.current_token_value == "print" || parser.current_token_value == "break" || parser.current_token_value == "append" || parser.current_token_value == "remove" || parser.current_token_value == "swap" || parser.current_token_value == "in" || parser.current_token_value == "typeof" || parser.current_token_value == "rot" ||
+			   parser.current_token_value == "drop"  || parser.current_token_value == "dup" || parser.current_token_value == "inc" || parser.current_token_value == "dec" || parser.current_token_value == "replace" || parser.current_token_value == "read" || parser.current_token_value == "puts" || parser.current_token_value == "over" {
 				name := parser.current_token_value
 				IdExpr := AsId{name}
 				parser.ParserEat(TOKEN_ID)
@@ -1410,6 +1410,36 @@ func (scope *Scope) OpTypeOf() (*Error) {
 	return nil
 }
 
+func (scope *Scope) OpRot() (*Error) {
+	if len(scope.Stack) < 3 {
+		err := Error{}
+		err.message = "StackIndexError: `rot` expected more than three elements in the stack."
+		err.Type = StackIndexError
+		return &err
+	}
+	visitedExpr := scope.Stack[len(scope.Stack)-1]
+	visitedExprSecond := scope.Stack[len(scope.Stack)-2]
+	visitedExprThird := scope.Stack[len(scope.Stack)-3]
+	scope.OpDrop()
+	scope.OpDrop()
+	scope.OpDrop()
+	scope.OpPush(visitedExprSecond)
+	scope.OpPush(visitedExpr)
+	scope.OpPush(visitedExprThird)
+	return nil
+}
+
+func (scope *Scope) OpOver() (*Error) {
+	if len(scope.Stack) < 2 {
+		err := Error{}
+		err.message = "StackIndexError: `over` expected more than two elements in the stack."
+		err.Type = StackIndexError
+		return &err
+	}
+	scope.OpPush(scope.Stack[len(scope.Stack)-2])
+	return nil
+}
+
 func (scope *Scope) OpVardef(name string) (*Error) {
 	if len(scope.Stack) < 1 {
 		err := Error{}
@@ -1486,6 +1516,12 @@ func (scope *Scope) VisitorVisit(node AST, IsTry bool) (bool, *Error) {
 					err = scope.OpIn()
 				} else if node.(AsId).name == "typeof" {
 					err = scope.OpTypeOf()
+				} else if node.(AsId).name == "rot" {
+					err = scope.OpRot()
+				} else if node.(AsId).name == "over" {
+					err = scope.OpOver()
+				} else {
+					panic("unreachable")
 				}
 			case AsBinop:
 				err = scope.OpBinop(node.(AsBinop).op)
