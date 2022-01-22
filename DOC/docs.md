@@ -24,6 +24,13 @@ $ ./main.exe examples/main.tsp
 * [Block](#block)
 * [Variables](#variables)
 * [Arithmetic](#arithmetic)
+
+* [List](#list)
+    * [Append](#append)
+    * [Read](#read)
+    * [Remove](#remove)
+    * [Len](#len)
+
 * [If Statement](#if-statement)
 
 * [For loop](#for-loop)
@@ -274,17 +281,25 @@ print
 ```python
 { 1 2 3 4 5 6 7 8 9 10 } print
 ```
+### Append
 ```python
 { 1 2 3 4 5 6 7 8 9 10 } 11 append
 ```
+### Read
 ```python
 { 1 2 3 4 5 6 7 8 9 10 } 0 read print
 ```
+### Replace
 ```python
 { 1 2 3 4 5 6 7 8 9 10 } "Hello World!" 0 replace print
 ```
+### Remove
 ```python
 { 1 2 3 4 5 6 7 8 9 10 } 0 remove print
+```
+### Len
+```python
+{ 1 2 3 4 5 6 7 8 9 10 } len print
 ```
 
 ## Examples
