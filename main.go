@@ -1289,6 +1289,7 @@ func (scope *Scope) OpRead() (*Error) {
 		return &err
 	}
 	scope.OpDrop()
+	scope.OpDrop()
 	if _, ok := visitedList.(AsList); ok {
 		if len(visitedList.(AsList).ListArgs) <= visitedIndex.(AsInt).IntValue {
 			err := Error{}
