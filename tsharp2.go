@@ -612,7 +612,7 @@ func ParserParse(parser *Parser) AST {
 	}
 	for {
 		if parser.current_token_type == TOKEN_ID {
-			if parser.current_token_value == "print" || parser.current_token_value == "break" || parser.current_token_value == "append" || parser.current_token_value == "remove" || parser.current_token_value == "swap" ||
+			if parser.current_token_value == "print" || parser.current_token_value == "break" || parser.current_token_value == "append" || parser.current_token_value == "remove" || parser.current_token_value == "swap" || parser.current_token_value == "in" ||
 			   parser.current_token_value == "drop"  || parser.current_token_value == "dup" || parser.current_token_value == "inc" || parser.current_token_value == "dec" || parser.current_token_value == "replace" || parser.current_token_value == "read" {
 				name := parser.current_token_value
 				IdExpr := AsId{name}
@@ -739,15 +739,13 @@ func ParserParse(parser *Parser) AST {
 
 type Scope struct {
     Stack []AST
-    Variables map[string]AST
-    Blocks map[string][]AST
 }
+
+var Variables = map[string]AST{}
 
 func InitScope() *Scope {
 	return &Scope{
 		[]AST{},
-		map[string]AST{},
-		map[string][]AST{},
 	}
 }
 
@@ -768,8 +766,8 @@ func (scope *Scope) OpPush(node AST) (*Error) {
 	if IsList {
 		scope.Stack = append(scope.Stack, CreateAsList(node))
 	} else if IsVar {
-		if _, ok := scope.Variables[node.(Var).Name]; ok {
-			VarValue := scope.Variables[node.(Var).Name]
+		if _, ok := Variables[node.(Var).Name]; ok {
+			VarValue := Variables[node.(Var).Name]
 			scope.Stack = append(scope.Stack, VarValue)
 		} else {
 			err := Error{}
@@ -1269,6 +1267,45 @@ func (scope *Scope) OpRemove() (*Error) {
 	return nil
 }
 
+func (scope *Scope) OpIn() (*Error) {
+	if len(scope.Stack) < 2 {
+		err := Error{}
+		err.message = "StackIndexError: `remove` expected two or more element in the stack."
+		err.Type = StackIndexError
+		return &err
+	}
+	visitedVal := scope.Stack[len(scope.Stack)-2]
+	visitedList := scope.Stack[len(scope.Stack)-1]
+	scope.OpDrop()
+	scope.OpDrop()
+	if _, ok := visitedList.(AsList); !ok {
+		err := Error{}
+		err.message = "TypeError: `in` expected <list> type element in the stack."
+		err.Type = TypeError
+		return &err
+	}
+	for i := 0; i < len(visitedList.(AsList).ListArgs); i++ {
+		var val AST
+		switch visitedVal.(type) {
+			case AsStr: val = visitedVal.(AsStr)
+			case AsInt: val = visitedVal.(AsInt)
+			case AsList: val = visitedVal.(AsList)
+		}
+		if visitedList.(AsList).ListArgs[i] == val {
+			expr := AsBool {
+				true,
+			}
+			scope.OpPush(expr)
+			return nil
+		}
+	}
+	expr := AsBool {
+		false,
+	}
+	scope.OpPush(expr)
+	return nil
+}
+
 func (scope *Scope) OpVardef(name string) (*Error) {
 	if len(scope.Stack) < 1 {
 		err := Error{}
@@ -1277,7 +1314,7 @@ func (scope *Scope) OpVardef(name string) (*Error) {
 		return &err
 	}
 	VarValue := scope.Stack[len(scope.Stack)-1]
-	scope.Variables[name] = VarValue
+	Variables[name] = VarValue
 	scope.OpDrop()
 	return nil
 }
@@ -1318,6 +1355,8 @@ func (scope *Scope) VisitorVisit(node AST, IsTry bool) (bool, *Error) {
 					err = scope.OpReplace()
 				} else if node.(AsId).name == "remove" {
 					err = scope.OpRemove()
+				} else if node.(AsId).name == "in" {
+					err = scope.OpIn()
 				}
 			case AsBinop:
 				err = scope.OpBinop(node.(AsBinop).op)
