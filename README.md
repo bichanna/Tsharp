@@ -48,9 +48,9 @@ $ ./main.exe <filename>.tsp
 
 ### Fibonacci Sequence
 ```pascal
-10000 -> n
+10000 -> N
 
-0 1 for over n < do
+0 1 for over N < do
   over puts " " puts
   swap over +
 end
@@ -61,47 +61,37 @@ drop drop
 
 ### Bubble Sort
 ```pascal
-block BubbleSort do
-    0 for dup length <= do
-        0 for dup length 1 - < do
-            dup -> j
-            j 1 + -> i
-            if arr j read swap i read swap drop > do
-                arr j read -> x
-                i read -> y
-                y j replace
-                x i replace
-                drop
-            end 
-            inc
-        end drop
+{ 19 13 6 2 18 8 1 4 11 9 100 30 4 } dup dup print -> arr
+
+13 -> length
+
+0 for dup length <= do
+    0 for dup length 1 - < do
+        dup -> j
+        j 1 + -> i
+        if arr j read swap i read swap drop > do
+            arr j read -> x
+            i read -> y
+            y j replace
+            x i replace
+            drop
+        end 
         inc
     end drop
-end
+    inc
+end drop
 
-block Main do
-    [] 19 append 13 append 6  append 2  append 18 append 8 append 1 append dup -> arr
-
-    len -> length
-
-    "before:      " puts arr print
-
-    call BubbleSort
-
-    "sorted list: " puts print
-end
-
-call Main
+print
 ```
 
 ### Factorial
 ```pascal
 block Factorial do
-    -> n
+    -> N
     1 -> x
-    for n 1 >= do
-        x n * -> x
-        n 1 - -> n
+    for N 1 >= do
+        x N * -> x
+        N 1 - -> N
     end
     x
 end
