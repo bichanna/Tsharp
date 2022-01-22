@@ -43,7 +43,6 @@ $ ./main.exe examples/main.tsp
 * [Inc](#inc)
 * [Dec](#dec)
 * [printS](#prints)
-* [printV](#printv)
 
 </td><td valign=top>
 
@@ -123,18 +122,6 @@ printS
 ```
 'printS' print all stack values. 'printS' won't drop stack value after print.
 
-## PrintV
-```python
-10 -> N
-"Hello World!" -> text
-
-printV
-
-# N : 10
-# text : "Hello World!"
-
-```
-'printV' print all variables.
 
 ## For loop
 
@@ -160,14 +147,15 @@ end
 ```python
 
 # errors
-# StackOutRange
+# StackIndexError
 # TypeError
 # ImportError
+# NameError
 
 try 
     dup
-except StackOutRange do
-    "Error" print
+except StackIndexError do
+    "Error..." print
 end
 ```
 
@@ -249,7 +237,7 @@ print
 
 ## List
 ```python
-[] # push empty list
+{} # push empty list
 
 "Hello World!" append # append string "Hello World!"
 
@@ -260,6 +248,8 @@ print
 "T# Programming Language" 1 replace # replace list index '1' to string "T# Programming Language"
 
 print
+
+{ 1 2 3 4 5 6 7 8 9 10 } print
 ```
 
 ## Examples
@@ -299,37 +289,27 @@ print
 
 ### Bubble Sort
 ```pascal
-block BubbleSort do
-    0 for dup length <= do
-        0 for dup length 1 - < do
-            dup -> j
-            j 1 + -> i
-            if arr j read swap i read swap drop > do
-                arr j read -> x
-                i read -> y
-                y j replace
-                x i replace
-                drop
-            end 
-            inc
-        end drop
+{ 19 13 6 2 18 8 1 4 11 9 100 30 4 } dup dup print -> arr
+
+13 -> length
+
+0 for dup length <= do
+    0 for dup length 1 - < do
+        dup -> j
+        j 1 + -> i
+        if arr j read swap i read swap drop > do
+            arr j read -> x
+            i read -> y
+            y j replace
+            x i replace
+            drop
+        end 
         inc
     end drop
-end
+    inc
+end drop
 
-block Main do
-    [] 19 append 13 append 6  append 2  append 18 append 8 append 1 append dup -> arr
-
-    len -> length
-
-    "before:      " puts arr print
-
-    call BubbleSort
-
-    "sorted list: " puts print
-end
-
-call Main
+print
 ```
 
 ### Fibonacci
