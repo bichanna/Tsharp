@@ -451,6 +451,12 @@ type AsPush struct {
 
 func (node AsPush) node() {}
 
+type AsType struct {
+	TypeValue string
+}
+
+func (node AsType) node() {}
+
 type Vardef struct {
 	Name string
 }
@@ -596,6 +602,11 @@ func ParserParseExpr(parser *Parser) AST {
 				parser.current_token_value,
 			}
 			parser.ParserEat(TOKEN_ID)
+		case TOKEN_TYPE:
+			expr = AsType {
+				parser.current_token_value,
+			}
+			parser.ParserEat(TOKEN_TYPE)
 		default:
 			fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`.", parser.line, parser.column, parser.current_token_value))
 			os.Exit(0)
@@ -612,7 +623,7 @@ func ParserParse(parser *Parser) AST {
 	}
 	for {
 		if parser.current_token_type == TOKEN_ID {
-			if parser.current_token_value == "print" || parser.current_token_value == "break" || parser.current_token_value == "append" || parser.current_token_value == "remove" || parser.current_token_value == "swap" || parser.current_token_value == "in" ||
+			if parser.current_token_value == "print" || parser.current_token_value == "break" || parser.current_token_value == "append" || parser.current_token_value == "remove" || parser.current_token_value == "swap" || parser.current_token_value == "in" || parser.current_token_value == "typeof" ||
 			   parser.current_token_value == "drop"  || parser.current_token_value == "dup" || parser.current_token_value == "inc" || parser.current_token_value == "dec" || parser.current_token_value == "replace" || parser.current_token_value == "read" {
 				name := parser.current_token_value
 				IdExpr := AsId{name}
@@ -695,7 +706,7 @@ func ParserParse(parser *Parser) AST {
 				Statements = append(Statements, PushExpr)
 			}
 		} else if parser.current_token_type == TOKEN_INT  || parser.current_token_type == TOKEN_STRING ||
-		    parser.current_token_type == TOKEN_BOOL || parser.current_token_type == TOKEN_ERROR || parser.current_token_type == TOKEN_L_BRACKET {
+		    parser.current_token_type == TOKEN_BOOL || parser.current_token_type == TOKEN_ERROR || parser.current_token_type == TOKEN_L_BRACKET || parser.current_token_type == TOKEN_TYPE {
 			expr := ParserParseExpr(parser)
 			PushExpr := AsPush{
 				value: expr,
@@ -864,6 +875,8 @@ func (scope *Scope) OpCompare(op uint8) (*Error) {
 				case AsStr: val = first.(AsStr).StringValue == second.(AsStr).StringValue
 				case AsInt:  val = second.(AsInt).IntValue == first.(AsInt).IntValue
 				case AsBool: val = second.(AsBool).BoolValue == first.(AsBool).BoolValue
+				case AsType: val = second.(AsType).TypeValue == first.(AsType).TypeValue
+				case AsError: val = second.(AsError).err == first.(AsError).err
 			}
 		}
 	} else if op == TOKEN_NOT_EQUALS {
@@ -874,6 +887,8 @@ func (scope *Scope) OpCompare(op uint8) (*Error) {
 				case AsStr: val = first.(AsStr).StringValue != second.(AsStr).StringValue
 				case AsInt:  val = second.(AsInt).IntValue != first.(AsInt).IntValue
 				case AsBool: val = second.(AsBool).BoolValue != first.(AsBool).BoolValue
+				case AsType: val = second.(AsType).TypeValue != first.(AsType).TypeValue
+				case AsError: val = second.(AsError).err == first.(AsError).err
 			}
 		}
 	} else if op == TOKEN_OR || op == TOKEN_AND {
@@ -944,6 +959,7 @@ func (scope *Scope) OpPrint() (*Error) {
 		case AsStr: fmt.Println(expr.(AsStr).StringValue)
 		case AsInt: fmt.Println(expr.(AsInt).IntValue)
 		case AsBool: fmt.Println(expr.(AsBool).BoolValue)
+		case AsType: fmt.Println(fmt.Sprintf("<%s>" ,expr.(AsType).TypeValue))
 		case AsError:
 			switch expr.(AsError).err {
 				case NameError: fmt.Println("<error 'NameError'>")
@@ -1270,7 +1286,7 @@ func (scope *Scope) OpRemove() (*Error) {
 func (scope *Scope) OpIn() (*Error) {
 	if len(scope.Stack) < 2 {
 		err := Error{}
-		err.message = "StackIndexError: `remove` expected two or more element in the stack."
+		err.message = "StackIndexError: `in` expected two or more element in the stack."
 		err.Type = StackIndexError
 		return &err
 	}
@@ -1302,6 +1318,31 @@ func (scope *Scope) OpIn() (*Error) {
 	expr := AsBool {
 		false,
 	}
+	scope.OpPush(expr)
+	return nil
+}
+
+func (scope *Scope) OpTypeOf() (*Error) {
+	if len(scope.Stack) < 1 {
+		err := Error{}
+		err.message = "StackIndexError: `typeof` expected one or more element in the stack."
+		err.Type = StackIndexError
+		return &err
+	}
+	visitedVal := scope.Stack[len(scope.Stack)-1]
+	var TypeVal string
+	switch visitedVal.(type) {
+		case AsStr: TypeVal = "string"
+		case AsInt: TypeVal = "int"
+		case AsList: TypeVal = "list"
+		case AsBool: TypeVal = "bool"
+		case AsType: TypeVal = "type"
+		case AsError: TypeVal = "error"
+	}
+	expr := AsType {
+		TypeVal,
+	}
+	scope.OpDrop()
 	scope.OpPush(expr)
 	return nil
 }
@@ -1357,6 +1398,8 @@ func (scope *Scope) VisitorVisit(node AST, IsTry bool) (bool, *Error) {
 					err = scope.OpRemove()
 				} else if node.(AsId).name == "in" {
 					err = scope.OpIn()
+				} else if node.(AsId).name == "typeof" {
+					err = scope.OpTypeOf()
 				}
 			case AsBinop:
 				err = scope.OpBinop(node.(AsBinop).op)
