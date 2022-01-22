@@ -237,19 +237,19 @@ print
 
 ## List
 ```python
-{} # push empty list
-
-"Hello World!" append # append string "Hello World!"
-
-34 append # append int 34
-
-68 append # append int 68
-
-"T# Programming Language" 1 replace # replace list index '1' to string "T# Programming Language"
-
-print
-
 { 1 2 3 4 5 6 7 8 9 10 } print
+```
+```python
+{ 1 2 3 4 5 6 7 8 9 10 } 11 append
+```
+```python
+{ 1 2 3 4 5 6 7 8 9 10 } 0 read print
+```
+```python
+{ 1 2 3 4 5 6 7 8 9 10 } "Hello World!" 0 replace print
+```
+```python
+{ 1 2 3 4 5 6 7 8 9 10 } 0 remove print
 ```
 
 ## Examples
@@ -297,10 +297,10 @@ print
     0 for dup length 1 - < do
         dup -> j
         j 1 + -> i
-        if arr j read swap i read swap drop > do
+        if arr j read arr i read > do
             arr j read -> x
-            i read -> y
-            y j replace
+            arr i read -> y
+            arr y j replace
             x i replace
             drop
         end 
