@@ -324,9 +324,9 @@ print
 
 ### Bubble Sort
 ```pascal
-{ 19 13 6 2 18 8 1 4 11 9 100 30 4 } dup dup print -> arr
+{ 19 13 6 2 18 8 1 4 11 9 100 30 4 } -> arr arr print
 
-13 -> length
+arr len -> length
 
 0 for dup length <= do
     0 for dup length 1 - < do
@@ -335,16 +335,15 @@ print
         if arr j read arr i read > do
             arr j read -> x
             arr i read -> y
-            arr y j replace
-            x i replace
-            drop
+            arr y j replace dup -> arr
+            x i replace -> arr
         end 
         inc
     end drop
     inc
 end drop
 
-print
+arr print
 ```
 
 ### Fibonacci
