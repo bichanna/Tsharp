@@ -22,7 +22,7 @@ $ ./main.exe examples/main.tsp
 * [Hello World](#hello-world)
 * [Comments](#comments)
 * [Block](#block)
-* [Variable](#variable)
+* [Variables](#variables)
 * [Arithmetic](#arithmetic)
 * [If Statement](#if-statement)
 
@@ -71,6 +71,15 @@ $ ./main.exe examples/main.tsp
 import "main.tsp"
 ```
 
+## Variables
+```pascal
+10 -> x
+
+x -> y
+
+y print
+```
+
 ## Block
 ```pascal
 block main do
@@ -84,31 +93,72 @@ call main
 
 ## If Statement
 ```pascal
+if true do
+    "Hello World" print
+end
+```
+```pascal
 if false do
     "Hello World" print
-elif false do
-    "elif body!" print
 else
-    "else body!" print
+    "Hello John Doe" print
 end
-
-10 10 == print
-20 10 != print
-2 10 < print
-10 2 > print
+```
+```pascal
+if false do
+    "Hello World" print
+elif true
+    "Hello John Doe" print
+end
+```
+```pascal
+if true false || do
+    "Hello World" print
+end
+```
+```pascal
+if true true && do
+    "Hello World" print
+end
+```
+```pascal
+2 2 == print
+2 3 != print
+2 3 < print
+3 2 > print
+2 3 <= print
+3 2 >= print
 ```
 
 ## Dup
 ```pascal
 "Hello World" dup print print
 ```
-'dup' duplicate element on top of the stack.
+'dup' duplicate element on top of the stack. ( a -- a a )
 
 ## Drop
 ```pascal
 "Hello World" "T# Programming Language" drop print
 ```
-'drop' drops the top element of the stack.
+'drop' drops the top element of the stack. ( a --  )
+
+## Rot
+```python
+1 2 3 rot print print print
+```
+'rot' rotate top three stack elements. ( a b c -- b c a )
+
+## Swap
+```pascal
+1 2 swap print print
+```
+'swap' swaps two values in stack. ( a b -- b a )
+
+## Over
+```python
+1 2 over print print print
+```
+'over' copy the element below the top of the stack. ( a b -- a b a )
 
 ## PrintS
 ```python
@@ -156,6 +206,10 @@ try
     dup
 except StackIndexError do
     "Error..." print
+except IndexError do
+    "Error..." print
+except NameError do
+    "Error..." print
 end
 ```
 
@@ -170,15 +224,6 @@ end
 10 2 * print
 ```
 
-## Variable
-```pascal
-10 -> x
-
-x -> y
-
-y print
-```
-
 ## Type
 ```python
 int # 12345
@@ -191,24 +236,6 @@ type # int string bool type
 ```python
 "Hello World" dup typeof print
 ```
-
-## Rot
-```python
-1 2 3 rot print print print
-```
-'rot' rotate top three stack elements.
-
-## Swap
-```pascal
-1 2 swap print print
-```
-'swap' swaps two values in stack.
-
-## Over
-```python
-1 2 over print print print
-```
-'over' copy the element below the top of the stack
 
 ## append string
 ```python
