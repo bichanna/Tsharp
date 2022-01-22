@@ -229,6 +229,7 @@ end
 int # 12345
 string # "Hello World!"
 bool # true false
+list # { 1 2 3 4 5 }
 type # int string bool type
 ```
 
