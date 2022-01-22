@@ -637,7 +637,7 @@ func ParserParse(parser *Parser) AST {
 	for {
 		if parser.current_token_type == TOKEN_ID {
 			if parser.current_token_value == "print" || parser.current_token_value == "break" || parser.current_token_value == "append" || parser.current_token_value == "remove" || parser.current_token_value == "swap" || parser.current_token_value == "in" || parser.current_token_value == "typeof" || parser.current_token_value == "rot" ||
-			   parser.current_token_value == "drop"  || parser.current_token_value == "dup" || parser.current_token_value == "inc" || parser.current_token_value == "dec" || parser.current_token_value == "replace" || parser.current_token_value == "read" || parser.current_token_value == "puts" || parser.current_token_value == "over" {
+			   parser.current_token_value == "drop"  || parser.current_token_value == "dup" || parser.current_token_value == "inc" || parser.current_token_value == "dec" || parser.current_token_value == "replace" || parser.current_token_value == "read" || parser.current_token_value == "puts" || parser.current_token_value == "over" || parser.current_token_value == "printS" {
 				name := parser.current_token_value
 				IdExpr := AsId{name}
 				parser.ParserEat(TOKEN_ID)
@@ -1038,6 +1038,31 @@ func (scope *Scope) OpPuts() (*Error) {
 	}
 	scope.OpDrop()
 	return nil
+}
+
+func (scope *Scope) OpPrintS() {
+	fmt.Print(fmt.Sprintf("<%d> ", len(scope.Stack)))
+	for i:=len(scope.Stack); i > 0; i-- {
+		expr := scope.Stack[len(scope.Stack)-i]
+		switch expr.(type) {
+			case AsStr: fmt.Print(expr.(AsStr).StringValue)
+			case AsInt: fmt.Print(expr.(AsInt).IntValue)
+			case AsBool: fmt.Print(expr.(AsBool).BoolValue)
+			case AsType: fmt.Print(fmt.Sprintf("<%s>" ,expr.(AsType).TypeValue))
+			case AsError:
+				switch expr.(AsError).err {
+					case NameError: fmt.Print("<error 'NameError'>")
+					case StackIndexError: fmt.Print("<error 'StackIndexError'>")
+					case ImportError: fmt.Print("<error 'ImportError'>")
+					case IndexError: fmt.Print("<error 'IndexError'>")
+					case TypeError: fmt.Print("<error 'TypeError'>")
+					default: fmt.Print(fmt.Sprintf("unexpected error <%d>", expr.(AsError).err))
+				}
+			case AsList:
+				PrintAsList(expr)
+		}
+		print(" ")
+	}
 }
 
 func (scope *Scope) OpIf(node AST, IsTry bool) (bool, *Error) {
@@ -1492,6 +1517,8 @@ func (scope *Scope) VisitorVisit(node AST, IsTry bool) (bool, *Error) {
 					err = scope.OpPrint()
 				} else if node.(AsId).name == "puts" {
 					err = scope.OpPuts()
+				} else if node.(AsId).name == "printS" {
+					scope.OpPrintS()
 				} else if node.(AsId).name == "break" {
 					BreakValue = true
 				} else if node.(AsId).name == "drop" {
