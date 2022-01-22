@@ -469,6 +469,19 @@ type Var struct {
 
 func (node Var) node() {}
 
+type Blockdef struct {
+	Name string
+	BlockBody AST
+}
+
+func (node Blockdef) node() {}
+
+type CallBlock struct {
+	Name string
+}
+
+func (node CallBlock) node() {}
+
 type If struct {
 	IfOp AST
 	IfBody AST
@@ -629,6 +642,26 @@ func ParserParse(parser *Parser) AST {
 				IdExpr := AsId{name}
 				parser.ParserEat(TOKEN_ID)
 				Statements = append(Statements, IdExpr)
+			} else if parser.current_token_value == "block" {
+				parser.ParserEat(TOKEN_ID)
+				name := parser.current_token_value
+				parser.ParserEat(TOKEN_ID)
+				parser.ParserEat(TOKEN_DO)
+				BlockBody := ParserParse(parser)
+				parser.ParserEat(TOKEN_END)
+				BlockdefExpr := Blockdef {
+					Name: name,
+					BlockBody: BlockBody,
+				}
+				Statements = append(Statements, BlockdefExpr)
+			} else if parser.current_token_value == "call" {
+				parser.ParserEat(TOKEN_ID)
+				name := parser.current_token_value
+				parser.ParserEat(TOKEN_ID)
+				CallBlockExpr := CallBlock {
+					name,
+				}
+				Statements = append(Statements, CallBlockExpr)
 			} else if parser.current_token_value == "if" {
 				parser.ParserEat(TOKEN_ID)
 				IfOp := ParserParse(parser)
@@ -753,6 +786,7 @@ type Scope struct {
 }
 
 var Variables = map[string]AST{}
+var Blocks = map[string]AST{}
 
 func InitScope() *Scope {
 	return &Scope{
@@ -1360,6 +1394,27 @@ func (scope *Scope) OpVardef(name string) (*Error) {
 	return nil
 }
 
+func (scope *Scope) OpBlockdef(node AST) (*Error) {
+	if _, ok := Blocks[node.(Blockdef).Name]; ok {
+		err := Error{}
+		err.message = fmt.Sprintf("NameError: block `%s` is already defined.", node.(Blockdef).Name)
+		err.Type = NameError
+		return &err
+	}
+	Blocks[node.(Blockdef).Name] = node.(Blockdef).BlockBody
+	return nil
+}
+
+func (scope *Scope) OpCallBlock(name string) *Error {
+	if _, ok := Blocks[name]; !ok {
+		err := Error{}
+		err.message = fmt.Sprintf("NameError: undefined block `%s`.", name)
+		err.Type = NameError
+		return &err
+	}
+	scope.VisitorVisit(Blocks[name], false)
+	return nil
+}
 
 // -----------------------------
 // --------- Visitor -----------
@@ -1405,6 +1460,10 @@ func (scope *Scope) VisitorVisit(node AST, IsTry bool) (bool, *Error) {
 				err = scope.OpBinop(node.(AsBinop).op)
 			case Vardef:
 				err = scope.OpVardef(node.(Vardef).Name)
+			case Blockdef:
+				err = scope.OpBlockdef(node)
+			case CallBlock:
+				err = scope.OpCallBlock(node.(CallBlock).Name)
 			case Compare:
 				err = scope.OpCompare(node.(Compare).op)
 			case AsStatements:
