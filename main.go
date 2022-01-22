@@ -1,14 +1,14 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
+	"os"
+	"bufio"
 	"io"
 	"unicode"
-	"os"
-	"strconv"
 	"reflect"
-	"math"
+	_"unsafe"
+	"strconv"
 	"github.com/fatih/color"
 )
 
@@ -48,41 +48,24 @@ const (
 	TOKEN_COMMA
 	TOKEN_ERROR
 	TOKEN_EXCEPT
+	TOKEN_OR
+	TOKEN_AND
 )
 
 var tokens = []string{
-	TOKEN_EOF:            "TOKEN_EOF",
-	TOKEN_ILLEGAL:        "TOKEN_ILLEGAL",
-	TOKEN_ID:             "TOKEN_ID",
-	TOKEN_STRING:         "TOKEN_STRING",
-	TOKEN_INT:            "TOKEN_INT",
-	TOKEN_PLUS:           "TOKEN_PLUS",
-	TOKEN_MINUS:          "TOKEN_MINUS",
-	TOKEN_END:            "TOKEN_END",
-	TOKEN_DO:             "TOKEN_DO",
-	TOKEN_BOOL:           "TOKEN_BOOL",
-	TOKEN_ELIF:           "TOKEN_ELIF",
-	TOKEN_ELSE:           "TOKEN_ELSE",
-	TOKEN_DIV:            "TOKEN_DIV",
-	TOKEN_MUL:            "TOKEN_MUL",
-	TOKEN_EQUALS:         "TOKEN_EQUALS",
-	TOKEN_IS_EQUALS:      "TOKEN_IS_EQUALS",
-	TOKEN_NOT_EQUALS:     "TOKEN_NOT_EQUALS",
-	TOKEN_LESS_THAN:      "TOKEN_LESS_THAN",
-	TOKEN_GREATER_THAN:   "TOKEN_GREATER_THAN",
-	TOKEN_LESS_EQUALS:    "TOKEN_LESS_EQUALS",
-	TOKEN_GREATER_EQUALS: "TOKEN_GREATER_EQUALS",
-	TOKEN_REM:            "TOKEN_REM",
-	TOKEN_L_BRACKET:      "TOKEN_L_BRACKET",
-	TOKEN_R_BRACKET:      "TOKEN_R_BRACKET",
-	TOKEN_DOT:            "TOKEN_DOT",
-	TOKEN_COMMA:          "TOKEN_COMMA",
-	TOKEN_ERROR:          "TOKEN_ERROR",
-	TOKEN_EXCEPT:         "TOKEN_EXCEPT",
-}
-
-func (token Token) String() string {
-	return tokens[token]
+	TOKEN_PLUS:           "+",
+	TOKEN_MINUS:          "-",
+	TOKEN_DIV:            "/",
+	TOKEN_MUL:            "*",
+	TOKEN_IS_EQUALS:      "==",
+	TOKEN_NOT_EQUALS:     "!=",
+	TOKEN_LESS_THAN:      "<",
+	TOKEN_GREATER_THAN:   ">",
+	TOKEN_LESS_EQUALS:    "<=",
+	TOKEN_GREATER_EQUALS: ">=",
+	TOKEN_REM:            "%",
+	TOKEN_OR:             "||",
+	TOKEN_AND:            "&&",
 }
 
 type Position struct {
@@ -119,8 +102,8 @@ func (lexer *Lexer) Lex() (Position, Token, string) {
 			case '/': return lexer.pos, TOKEN_DIV, "/"
 			case '*': return lexer.pos, TOKEN_MUL, "*"
 			case '%': return lexer.pos, TOKEN_REM, "%"
-			case '[': return lexer.pos, TOKEN_L_BRACKET, "["
-			case ']': return lexer.pos, TOKEN_R_BRACKET, "]"
+			case '{': return lexer.pos, TOKEN_L_BRACKET, "{"
+			case '}': return lexer.pos, TOKEN_R_BRACKET, "}"
 			case ',': return lexer.pos, TOKEN_COMMA, ","
 			case '.': return lexer.pos, TOKEN_DOT, "."
 			default:
@@ -163,6 +146,44 @@ func (lexer *Lexer) Lex() (Position, Token, string) {
 					} else {
 						return lexer.pos, TOKEN_LESS_THAN, "<"
 					}
+				} else if r == '|' {
+					r, _, err := lexer.reader.ReadRune()
+					if err != nil {
+						if err == io.EOF {
+							fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`.", lexer.pos.line, lexer.pos.column, string(r)))
+							os.Exit(0)
+						}
+						err = nil
+						fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`.", lexer.pos.line, lexer.pos.column, string(r)))
+						os.Exit(0)
+						panic(err)
+					}
+					if r == '|' {
+						lexer.pos.column++
+						return lexer.pos, TOKEN_OR, "||"
+					} else {
+						fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`.", lexer.pos.line, lexer.pos.column, string(r)))
+						os.Exit(0)
+					}
+				} else if r == '&' {
+					r, _, err := lexer.reader.ReadRune()
+					if err != nil {
+						if err == io.EOF {
+							fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`.", lexer.pos.line, lexer.pos.column, string(r)))
+							os.Exit(0)
+						}
+						err = nil
+						fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`.", lexer.pos.line, lexer.pos.column, string(r)))
+						os.Exit(0)
+						panic(err)
+					}
+					if r == '&' {
+						lexer.pos.column++
+						return lexer.pos, TOKEN_AND, "&&"
+					} else {
+						fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`.", lexer.pos.line, lexer.pos.column, string(r)))
+						os.Exit(0)
+					}
 				} else if r == '>' {
 					r, _, err := lexer.reader.ReadRune()
 					if err != nil {
@@ -187,6 +208,13 @@ func (lexer *Lexer) Lex() (Position, Token, string) {
 				} else if r == '#' {
 					for {
 						r, _, err := lexer.reader.ReadRune()
+						if err != nil {
+							if err == io.EOF {
+								err = nil
+								return lexer.pos, TOKEN_EOF, "EOF"
+							}
+							panic(err)
+						}
 						if r == '\n' {break}
 						if err != nil {panic(err)}
 						lexer.pos.column++
@@ -213,7 +241,7 @@ func (lexer *Lexer) Lex() (Position, Token, string) {
 						return startPos, TOKEN_ELSE, val
 					} else if val == "elif" {
 						return startPos, TOKEN_ELIF, val
-					} else if val == "NameError" || val == "StackOutRange" || val == "TypeError" || val == "ImportError" {
+					} else if val == "NameError" || val == "StackIndexError" || val == "TypeError" || val == "ImportError" || val == "IndexError" {
 						return startPos, TOKEN_ERROR, val
 					} else if val == "except" {
 						return startPos, TOKEN_EXCEPT, val
@@ -231,6 +259,9 @@ func (lexer *Lexer) Lex() (Position, Token, string) {
 					val := lexer.lexStringSingle()
 					r, _, err = lexer.reader.ReadRune()
 					return startPos, TOKEN_STRING, val
+				} else {
+					fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`.", lexer.pos.line, lexer.pos.column, string(r)))
+					os.Exit(0)
 				}
         }
 	}
@@ -343,9 +374,10 @@ func (lexer *Lexer) resetPosition() {
 type ErrorType int
 const (
 	ErrorVoid ErrorType = iota
-	StackOutRange
+	StackIndexError
 	NameError
 	TypeError
+	IndexError
 	ImportError
 )
 
@@ -359,111 +391,138 @@ type Error struct {
 // ------------ AST ------------
 // -----------------------------
 
-type ExprType int
-const (
-	ExprVoid ExprType = iota
-	ExprInt
-	ExprStr
-	ExprId
-	ExprError
-	ExprArr
-	ExprAppend
-	ExprReplace
-	ExprRemove
-	ExprRead
-	ExprTypeType
-	ExprPush
-	ExprBlockdef
-	ExprPrint
-	ExprPrintS
-	ExprPrintV
-	ExprPuts
-	ExprInput
-	ExprOver
-	ExprRot
-	ExprInc
-	ExprDec
-	ExprLen
-	ExprTypeOf
-	ExprBreak
-	ExprSwap
-	ExprImport
-	ExprCall
-	ExprBool
-	ExprIf
-	ExprDup
-	ExprDrop
-	ExprExit
-	ExprFor
-	ExprBinop // + - * / %
-	ExprCompare // < > == !=
-	ExprVardef
-	ExprTry
-)
-
-type Expr struct {
-	Type ExprType
-	AsInt float64
-	AsStr string
-	AsId *Id
-	AsError ErrorType
-	AsArr []Expr
-	AsType string
-	AsPush *Push
-	AsBlockdef *Blockdef
-	AsCall *Call
-	AsBool bool
-	AsIf *If
-	AsFor *For
-	AsBiniop int
-	AsCompare int
-	AsImport string
-	AsVardef *Vardef
-	AsTry *Try
+type AsStr struct {
+	StringValue string
 }
 
-type Push struct {
-	Arg Expr
+func (node AsStr) node() {}
+
+type AsInt struct {
+	IntValue int
 }
 
-type Call struct {
-	Value string
+func (node AsInt) node() {}
+
+type AsBool struct {
+	BoolValue bool
 }
 
-type Blockdef struct {
-	Name string
-	Body []Expr
+func (node AsBool) node() {}
+
+type NewList struct {
+	ListBody AST
 }
 
-type If struct {
-	Op []Expr
-	Body []Expr
-	ElifBodys [][]Expr
-	ElifOps [][]Expr
-	ElseBody []Expr
+func (node NewList) node() {}
+
+type AsList struct {
+	ListArgs []AST
 }
 
-type For struct {
-	Op []Expr
-	Body []Expr
+func (node AsList) node() {}
+
+type AsId struct {
+	name string
 }
+
+func (node AsId) node() {}
+
+type Import struct {
+	FileName string
+}
+
+func (node Import) node() {}
+
+type Compare struct {
+	op uint8
+}
+
+func (node Compare) node() {}
+
+type AsError struct {
+	err ErrorType
+}
+
+func (node AsError) node() {}
+
+type AsBinop struct {
+	op uint8
+}
+
+func (node AsBinop) node() {}
+
+type AsPush struct {
+	value AST
+}
+
+func (node AsPush) node() {}
+
+type AsType struct {
+	TypeValue string
+}
+
+func (node AsType) node() {}
 
 type Vardef struct {
 	Name string
 }
 
-type Id struct {
+func (node Vardef) node() {}
+
+type Var struct {
 	Name string
 }
 
+func (node Var) node() {}
+
+type Blockdef struct {
+	Name string
+	BlockBody AST
+}
+
+func (node Blockdef) node() {}
+
+type CallBlock struct {
+	Name string
+}
+
+func (node CallBlock) node() {}
+
+type If struct {
+	IfOp AST
+	IfBody AST
+	ElifOps []AST
+	ElifBodys []AST
+	ElseBody AST
+}
+
+func (node If) node() {}
+
+type For struct {
+	ForOp AST
+	ForBody AST
+}
+
+func (node For) node() {}
+
 type Try struct {
-	TryBody []Expr
-	ExceptErrors []Expr
-	ExceptBodys [][]Expr
+	TryBody AST
+	ExceptErrors []AST
+	ExceptBodys []AST
+}
+
+func (node Try) node() {}
+
+type AsStatements []AST
+
+func (node AsStatements) node() {}
+
+type AST interface {
+	node()
 }
 
 // -----------------------------
-// ----------- Parse -----------
+// ---------- Parser -----------
 // -----------------------------
 
 type Parser struct {
@@ -473,6 +532,7 @@ type Parser struct {
 	line int
 	column int
 }
+
 
 func ParserInit(lexer *Lexer) *Parser {
 	pos, tok, val := lexer.Lex()
@@ -487,7 +547,7 @@ func ParserInit(lexer *Lexer) *Parser {
 
 func (parser *Parser) ParserEat(token Token) {
 	if token != parser.current_token_type {
-		fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value '%s'", parser.line, parser.column, parser.current_token_value))
+		fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`.", parser.line, parser.column, parser.current_token_value))
 		os.Exit(0)
 	}
 	pos, tok, val := parser.lexer.Lex()
@@ -497,402 +557,236 @@ func (parser *Parser) ParserEat(token Token) {
 	parser.column = pos.column
 }
 
-func StrToInt(num string) float64 {
-	i, err := strconv.ParseFloat(num, 64)
+func StrToInt(num string) int {
+	i, err := strconv.Atoi(num)
 	if err != nil{
 		panic(err)
 	}
 	return i
 }
 
-func ParserParseError(parser *Parser) (Expr) {
-	expr := Expr{}
-	expr.Type = ExprError
+func ParserParseError(parser *Parser) AST {
 	var err ErrorType
-	if parser.current_token_value == "NameError" {
+	if parser.current_token_value == "StackIndexError" {
+		err = StackIndexError
+	} else if parser.current_token_value == "NameError" {
 		err = NameError
-	} else if parser.current_token_value == "StackOutRange" {
-		err = StackOutRange
-	} else if parser.current_token_value == "TypeError" {
-		err = TypeError
 	} else if parser.current_token_value == "ImportError" {
 		err = ImportError
+	} else if parser.current_token_value == "TypeError" {
+		err = TypeError
+	} else if parser.current_token_value == "IndexError" {
+		err = IndexError
 	}
-	expr.AsError = err
 	parser.ParserEat(TOKEN_ERROR)
-	return expr
+	ErrorExpr := AsError {
+		err: err,
+	}
+	return ErrorExpr
 }
 
-func ParserParseExpr(parser *Parser) (Expr) {
-	expr := Expr{}
+func ParserParseExpr(parser *Parser) AST {
+	var expr AST
 	switch parser.current_token_type {
 		case TOKEN_INT:
-			expr.Type = ExprInt
-			expr.AsInt = StrToInt(parser.current_token_value)
+			expr = AsInt {
+				StrToInt(parser.current_token_value),
+			}
 			parser.ParserEat(TOKEN_INT)
 		case TOKEN_STRING:
-			expr.Type = ExprStr
-			expr.AsStr = parser.current_token_value
+			expr = AsStr {
+				parser.current_token_value,
+			}
 			parser.ParserEat(TOKEN_STRING)
 		case TOKEN_BOOL:
-			expr.Type = ExprBool
-			if parser.current_token_value == "true" {
-				expr.AsBool = true
-			} else {
-				expr.AsBool = false
+			BoolValue := parser.current_token_value == "true"
+			expr = AsBool {
+				BoolValue,
 			}
 			parser.ParserEat(TOKEN_BOOL)
-		case TOKEN_TYPE:
-			expr.Type = ExprTypeType
-			expr.AsType = parser.current_token_value
-			parser.ParserEat(TOKEN_TYPE)
-		case TOKEN_ID:
-			expr.Type = ExprId
-			vname := parser.current_token_value
-			parser.ParserEat(TOKEN_ID)
-			expr.AsId = &Id {
-				Name: vname,
-			}
-		case TOKEN_L_BRACKET:
-			parser.ParserEat(TOKEN_L_BRACKET)
-			expr.Type = ExprArr
-			parser.ParserEat(TOKEN_R_BRACKET)
 		case TOKEN_ERROR:
 			expr = ParserParseError(parser)
+		case TOKEN_L_BRACKET:
+			parser.ParserEat(TOKEN_L_BRACKET)
+			var ListBody AST
+			if parser.current_token_type != TOKEN_R_BRACKET {
+				ListBody = ParserParse(parser)
+			}
+			expr = NewList {
+				ListBody,
+			}
+			parser.ParserEat(TOKEN_R_BRACKET)
+		case TOKEN_ID:
+			expr = Var {
+				parser.current_token_value,
+			}
+			parser.ParserEat(TOKEN_ID)
+		case TOKEN_TYPE:
+			expr = AsType {
+				parser.current_token_value,
+			}
+			parser.ParserEat(TOKEN_TYPE)
 		default:
-			fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value '%s'", parser.line, parser.column, parser.current_token_value))
+			fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`.", parser.line, parser.column, parser.current_token_value))
 			os.Exit(0)
 	}
+
 	return expr
 }
 
-func ParserParse(parser *Parser)  ([]Expr) {
-	exprs := []Expr{}
-
+func ParserParse(parser *Parser) AST {
+	var Statements AsStatements
+	if  parser.current_token_type == TOKEN_DO || parser.current_token_type == TOKEN_END || parser.current_token_type == TOKEN_ELIF || parser.current_token_type == TOKEN_ELSE || parser.current_token_type == TOKEN_EXCEPT {
+		fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: the body is empty, unexpected token value `%s`.", parser.line, parser.column, parser.current_token_value))
+		os.Exit(0)
+	}
 	for {
-		expr := Expr{}
 		if parser.current_token_type == TOKEN_ID {
-			if parser.current_token_value == "print" {
+			if parser.current_token_value == "print" || parser.current_token_value == "break" || parser.current_token_value == "append" || parser.current_token_value == "remove" || parser.current_token_value == "swap" || parser.current_token_value == "in" || parser.current_token_value == "typeof" || parser.current_token_value == "rot" ||
+			   parser.current_token_value == "drop"  || parser.current_token_value == "dup" || parser.current_token_value == "inc" || parser.current_token_value == "dec" || parser.current_token_value == "replace" || parser.current_token_value == "read" || parser.current_token_value == "puts" || parser.current_token_value == "over" || parser.current_token_value == "printS" {
+				name := parser.current_token_value
+				IdExpr := AsId{name}
 				parser.ParserEat(TOKEN_ID)
-				expr.Type = ExprPrint
-				exprs = append(exprs, expr)
-			} else if parser.current_token_value == "printS" {
-				parser.ParserEat(TOKEN_ID)
-				expr.Type = ExprPrintS
-				exprs = append(exprs, expr)
-			} else if parser.current_token_value == "printV" {
-				parser.ParserEat(TOKEN_ID)
-				expr.Type = ExprPrintV
-				exprs = append(exprs, expr)
-			} else if parser.current_token_value == "input" {
-				parser.ParserEat(TOKEN_ID)
-				expr.Type = ExprInput
-				exprs = append(exprs, expr)
-			} else if parser.current_token_value == "len" {
-				parser.ParserEat(TOKEN_ID)
-				expr.Type = ExprLen
-				exprs = append(exprs, expr)
-			} else if parser.current_token_value == "puts" {
-				parser.ParserEat(TOKEN_ID)
-				expr.Type = ExprPuts
-				exprs = append(exprs, expr)
-			} else if parser.current_token_value == "typeof" {
-				parser.ParserEat(TOKEN_ID)
-				expr.Type = ExprTypeOf
-				exprs = append(exprs, expr)
-			} else if parser.current_token_value == "swap" {
-				parser.ParserEat(TOKEN_ID)
-				expr.Type = ExprSwap
-				exprs = append(exprs, expr)
-			} else if parser.current_token_value == "over" {
-				parser.ParserEat(TOKEN_ID)
-				expr.Type = ExprOver
-				exprs = append(exprs, expr)
-			} else if parser.current_token_value == "rot" {
-				parser.ParserEat(TOKEN_ID)
-				expr.Type = ExprRot
-				exprs = append(exprs, expr)
-			} else if parser.current_token_value == "inc" {
-				parser.ParserEat(TOKEN_ID)
-				expr.Type = ExprInc
-				exprs = append(exprs, expr)
-			} else if parser.current_token_value == "dec" {
-				parser.ParserEat(TOKEN_ID)
-				expr.Type = ExprDec
-				exprs = append(exprs, expr)
-			} else if parser.current_token_value == "import" {
-				parser.ParserEat(TOKEN_ID)
-				if parser.current_token_type != TOKEN_STRING {
-					fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value '%s'", parser.line, parser.column, parser.current_token_value))
-					os.Exit(0)
-				}
-				expr.Type = ExprImport
-				expr.AsImport = parser.current_token_value
-				parser.ParserEat(TOKEN_STRING)
-				exprs = append(exprs, expr)
-			} else if parser.current_token_value == "dup" {
-				parser.ParserEat(TOKEN_ID)
-				expr.Type = ExprDup
-				exprs = append(exprs, expr)
-			} else if parser.current_token_value == "drop" {
-				parser.ParserEat(TOKEN_ID)
-				expr.Type = ExprDrop
-				exprs = append(exprs, expr)
-			} else if parser.current_token_value == "exit" {
-				parser.ParserEat(TOKEN_ID)
-				expr.Type = ExprExit
-				exprs = append(exprs, expr)
+				Statements = append(Statements, IdExpr)
 			} else if parser.current_token_value == "block" {
 				parser.ParserEat(TOKEN_ID)
-				expr.Type = ExprBlockdef
-				if parser.current_token_type != TOKEN_ID {
-					fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value '%s'", parser.line, parser.column, parser.current_token_value))
-					os.Exit(0)
-				}
 				name := parser.current_token_value
 				parser.ParserEat(TOKEN_ID)
 				parser.ParserEat(TOKEN_DO)
-				if parser.current_token_type == TOKEN_END {
-					fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: block '%s' body is empty", parser.line, parser.column, name))
-					os.Exit(0)
-				}
-				body := ParserParse(parser)
-				expr.AsBlockdef = &Blockdef{
+				BlockBody := ParserParse(parser)
+				parser.ParserEat(TOKEN_END)
+				BlockdefExpr := Blockdef {
 					Name: name,
-					Body: body,
+					BlockBody: BlockBody,
 				}
-				parser.ParserEat(TOKEN_END)
-				exprs = append(exprs, expr)
-			} else if parser.current_token_value == "for" {
-				parser.ParserEat(TOKEN_ID)
-				expr.Type = ExprFor
-				op := ParserParse(parser)
-				parser.ParserEat(TOKEN_DO)
-				if parser.current_token_type == TOKEN_END {
-					fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: for loop body is empty", parser.line, parser.column))
-					os.Exit(0)
-				}
-				body := ParserParse(parser)
-				parser.ParserEat(TOKEN_END)
-				expr.AsFor = &For{
-					Op: op,
-					Body: body,
-				}
-				exprs = append(exprs, expr)
-			} else if parser.current_token_value == "if" {
-				parser.ParserEat(TOKEN_ID)
-				expr.Type = ExprIf
-				op := ParserParse(parser)
-				parser.ParserEat(TOKEN_DO)
-				if parser.current_token_type == TOKEN_ELSE || parser.current_token_type == TOKEN_END {
-					fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: if statement body is empty", parser.line, parser.column))
-					os.Exit(0)
-				}
-				body := ParserParse(parser)
-				ElifBodys := [][]Expr{}
-				ElifOps := [][]Expr{}
-				if parser.current_token_type == TOKEN_ELIF {
-					for {
-						parser.ParserEat(TOKEN_ELIF)
-						if parser.current_token_type == TOKEN_ELSE || parser.current_token_type == TOKEN_END || parser.current_token_type == TOKEN_DO {
-							fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: if statement invalid syntax", parser.line, parser.column))
-							os.Exit(0)
-						}
-						ElifOp := ParserParse(parser)
-						parser.ParserEat(TOKEN_DO)
-						if parser.current_token_type == TOKEN_ELSE || parser.current_token_type == TOKEN_END {
-							fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: if statement elif body is empty", parser.line, parser.column))
-							os.Exit(0)
-						}
-						ElifBody := ParserParse(parser)
-						ElifBodys = append(ElifBodys, ElifBody)
-						ElifOps = append(ElifOps, ElifOp)
-						if parser.current_token_type != TOKEN_ELIF {
-							break
-						}
-					}
-				} else {
-					ElifBodys = nil
-					ElifOps = nil
-				}
-				if parser.current_token_type == TOKEN_ELSE {
-					parser.ParserEat(TOKEN_ELSE)
-					if parser.current_token_type == TOKEN_ELSE || parser.current_token_type == TOKEN_END {
-						fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: if statement body is empty", parser.line, parser.column))
-						os.Exit(0)
-					}
-					ElseBody := ParserParse(parser)
-					parser.ParserEat(TOKEN_END)
-					expr.AsIf = &If{
-						Op: op,
-						Body: body,
-						ElifBodys: ElifBodys,
-						ElifOps: ElifOps,
-						ElseBody: ElseBody,
-					}
-					exprs = append(exprs, expr)
-				} else {
-					parser.ParserEat(TOKEN_END)
-					expr.AsIf = &If{
-						Op: op,
-						Body: body,
-						ElifBodys: ElifBodys,
-						ElifOps: ElifOps,
-					}
-					exprs = append(exprs, expr)
-				}
+				Statements = append(Statements, BlockdefExpr)
 			} else if parser.current_token_value == "call" {
 				parser.ParserEat(TOKEN_ID)
-				if parser.current_token_type != TOKEN_ID {
-					fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value '%s'", parser.line, parser.column, parser.current_token_value))
-					os.Exit(0)
+				name := parser.current_token_value
+				parser.ParserEat(TOKEN_ID)
+				CallBlockExpr := CallBlock {
+					name,
 				}
-				expr.Type = ExprCall
-				expr.AsCall = &Call{
-					Value: parser.current_token_value,
+				Statements = append(Statements, CallBlockExpr)
+			} else if parser.current_token_value == "import" {
+				parser.ParserEat(TOKEN_ID)
+				ImportExpr := Import {
+					parser.current_token_value,
 				}
+				parser.ParserEat(TOKEN_STRING)
+				Statements = append(Statements, ImportExpr)
+			} else if parser.current_token_value == "if" {
 				parser.ParserEat(TOKEN_ID)
-				exprs = append(exprs, expr)
-			} else if parser.current_token_value == "break" {
-				parser.ParserEat(TOKEN_ID)
-				expr.Type = ExprBreak
-				exprs = append(exprs, expr)
-			} else if parser.current_token_value == "append" {
-				parser.ParserEat(TOKEN_ID)
-				expr.Type = ExprAppend
-				exprs = append(exprs, expr)
-			} else if parser.current_token_value == "replace" {
-				parser.ParserEat(TOKEN_ID)
-				expr.Type = ExprReplace
-				exprs = append(exprs, expr)
-			} else if parser.current_token_value == "remove" {
-				parser.ParserEat(TOKEN_ID)
-				expr.Type = ExprRemove
-				exprs = append(exprs, expr)
-			} else if parser.current_token_value == "read" {
-				parser.ParserEat(TOKEN_ID)
-				expr.Type = ExprRead
-				exprs = append(exprs, expr)
-			} else if parser.current_token_value == "try" {
-				var ErrorExpr Expr
-				parser.ParserEat(TOKEN_ID)
-				TryBody := ParserParse(parser)
-				var ExceptBodys [][]Expr
-				var ExceptErrors []Expr
-				if parser.current_token_type == TOKEN_END {
-					ExceptBodys = nil
-					ExceptErrors = nil
-				} else {
-					for {
-						if parser.current_token_type == TOKEN_EXCEPT {
-							parser.ParserEat(TOKEN_EXCEPT)
-							ErrorExpr = ParserParseError(parser)
-							parser.ParserEat(TOKEN_DO)
-						} else {
-							fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value '%s'", parser.line, parser.column, parser.current_token_value))
-							os.Exit(0)
-						}
-						ExceptBody := ParserParse(parser)
-						ExceptBodys = append(ExceptBodys, ExceptBody)
-						ExceptErrors = append(ExceptErrors, ErrorExpr)
-						if parser.current_token_type == TOKEN_END {
-							break
-						}
+				IfOp := ParserParse(parser)
+				parser.ParserEat(TOKEN_DO)
+				IfBody := ParserParse(parser)
+				var ElifOps []AST
+				var ElifBodys []AST
+				for {
+					if parser.current_token_type != TOKEN_ELIF {
+						break
 					}
+					parser.ParserEat(TOKEN_ELIF)
+					ElifOp := ParserParse(parser)
+					ElifOps = append(ElifOps, ElifOp)
+					parser.ParserEat(TOKEN_DO)
+					ElifBody := ParserParse(parser)
+					ElifBodys = append(ElifBodys, ElifBody)
+				}
+				var ElseBody AST = nil
+				for {
+					if parser.current_token_type != TOKEN_ELSE {
+						break
+					}
+					parser.ParserEat(TOKEN_ELSE)
+					ElseBody = ParserParse(parser)
 				}
 				parser.ParserEat(TOKEN_END)
-				expr.Type = ExprTry
-				expr.AsTry = &Try {
+				IfExpr := If {
+					IfOp: IfOp,
+					IfBody: IfBody,
+					ElifOps: ElifOps,
+					ElifBodys: ElifBodys,
+					ElseBody: ElseBody,
+				}
+				Statements = append(Statements, IfExpr)
+			} else if parser.current_token_value == "for" {
+				parser.ParserEat(TOKEN_ID)
+				ForOp := ParserParse(parser)
+				parser.ParserEat(TOKEN_DO)
+				ForBody := ParserParse(parser)
+				parser.ParserEat(TOKEN_END)
+				ForExpr := For {
+					ForOp: ForOp,
+					ForBody: ForBody,
+				}
+				Statements = append(Statements, ForExpr)
+			} else if parser.current_token_value == "try" {
+				parser.ParserEat(TOKEN_ID)
+				TryBody := ParserParse(parser)
+				var ExceptErrors []AST
+				var ExceptBodys []AST
+				for {
+					if parser.current_token_type != TOKEN_EXCEPT {
+						break
+					}
+					parser.ParserEat(TOKEN_EXCEPT)
+					ExceptError := ParserParseError(parser)
+					ExceptErrors = append(ExceptErrors, ExceptError)
+					parser.ParserEat(TOKEN_DO)
+					ExceptBody := ParserParse(parser)
+					ExceptBodys = append(ExceptBodys, ExceptBody)
+				}
+				parser.ParserEat(TOKEN_END)
+				TryExpr := Try {
 					TryBody: TryBody,
-					ExceptBodys: ExceptBodys,
 					ExceptErrors: ExceptErrors,
+					ExceptBodys: ExceptBodys,
 				}
-				exprs = append(exprs, expr)
+				Statements = append(Statements, TryExpr)
 			} else {
-				expr.Type = ExprPush
-				expr.AsPush = &Push{
-					Arg: ParserParseExpr(parser),
+				expr := ParserParseExpr(parser)
+				PushExpr := AsPush{
+					value: expr,
 				}
-				exprs = append(exprs, expr)
+				Statements = append(Statements, PushExpr)
 			}
-		} else if parser.current_token_type == TOKEN_PLUS {
-			expr.Type = ExprBinop
-			expr.AsBiniop = TOKEN_PLUS
-			parser.ParserEat(TOKEN_PLUS)
-			exprs = append(exprs, expr)
-		} else if parser.current_token_type == TOKEN_MINUS {
-			expr.Type = ExprBinop
-			expr.AsBiniop = TOKEN_MINUS
-			parser.ParserEat(TOKEN_MINUS)
-			exprs = append(exprs, expr)
-		} else if parser.current_token_type == TOKEN_DIV {
-			expr.Type = ExprBinop
-			expr.AsBiniop = TOKEN_DIV
-			parser.ParserEat(TOKEN_DIV)
-			exprs = append(exprs, expr)
-		} else if parser.current_token_type == TOKEN_MUL {
-			expr.Type = ExprBinop
-			expr.AsBiniop = TOKEN_MUL
-			parser.ParserEat(TOKEN_MUL)
-			exprs = append(exprs, expr)
-		} else if parser.current_token_type == TOKEN_REM {
-			expr.Type = ExprBinop
-			expr.AsBiniop = TOKEN_REM
-			parser.ParserEat(TOKEN_REM)
-			exprs = append(exprs, expr)
-		} else if parser.current_token_type == TOKEN_IS_EQUALS {
-			expr.Type = ExprCompare
-			expr.AsCompare = TOKEN_IS_EQUALS
-			parser.ParserEat(TOKEN_IS_EQUALS)
-			exprs = append(exprs, expr)
-		} else if parser.current_token_type == TOKEN_NOT_EQUALS {
-			expr.Type = ExprCompare
-			expr.AsCompare = TOKEN_NOT_EQUALS
-			parser.ParserEat(TOKEN_NOT_EQUALS)
-			exprs = append(exprs, expr)
-		} else if parser.current_token_type == TOKEN_LESS_THAN {
-			expr.Type = ExprCompare
-			expr.AsCompare = TOKEN_LESS_THAN
-			parser.ParserEat(TOKEN_LESS_THAN)
-			exprs = append(exprs, expr)
-		} else if parser.current_token_type == TOKEN_GREATER_THAN {
-			expr.Type = ExprCompare
-			expr.AsCompare = TOKEN_GREATER_THAN
-			parser.ParserEat(TOKEN_GREATER_THAN)
-			exprs = append(exprs, expr)
-		} else if parser.current_token_type == TOKEN_GREATER_EQUALS {
-			expr.Type = ExprCompare
-			expr.AsCompare = TOKEN_GREATER_EQUALS
-			parser.ParserEat(TOKEN_GREATER_EQUALS)
-			exprs = append(exprs, expr)
-		} else if parser.current_token_type == TOKEN_LESS_EQUALS {
-			expr.Type = ExprCompare
-			expr.AsCompare = TOKEN_LESS_EQUALS
-			parser.ParserEat(TOKEN_LESS_EQUALS)
-			exprs = append(exprs, expr)
+		} else if parser.current_token_type == TOKEN_INT  || parser.current_token_type == TOKEN_STRING ||
+		    parser.current_token_type == TOKEN_BOOL || parser.current_token_type == TOKEN_ERROR || parser.current_token_type == TOKEN_L_BRACKET || parser.current_token_type == TOKEN_TYPE {
+			expr := ParserParseExpr(parser)
+			PushExpr := AsPush{
+				value: expr,
+			}
+			Statements = append(Statements, PushExpr)
 		} else if parser.current_token_type == TOKEN_EQUALS {
 			parser.ParserEat(TOKEN_EQUALS)
-			expr.Type = ExprVardef
-			expr.AsVardef = &Vardef {
+			VardefExpr := Vardef {
 				Name: parser.current_token_value,
 			}
 			parser.ParserEat(TOKEN_ID)
-			exprs = append(exprs, expr)
-		} else if parser.current_token_type == TOKEN_INT || parser.current_token_type == TOKEN_STRING || parser.current_token_type == TOKEN_L_BRACKET || parser.current_token_type == TOKEN_TYPE || parser.current_token_type == TOKEN_BOOL || parser.current_token_type == TOKEN_ERROR {
-			expr.Type = ExprPush
-			expr.AsPush = &Push{
-				Arg: ParserParseExpr(parser),
+			Statements = append(Statements, VardefExpr)
+		} else if parser.current_token_type == TOKEN_PLUS || parser.current_token_type == TOKEN_MINUS || parser.current_token_type == TOKEN_MUL || parser.current_token_type == TOKEN_DIV || parser.current_token_type == TOKEN_REM {
+			BinopExpr := AsBinop {
+				op: uint8(parser.current_token_type),
 			}
-			exprs = append(exprs, expr)
-		} else if parser.current_token_type == TOKEN_END || parser.current_token_type == TOKEN_ELSE || parser.current_token_type == TOKEN_DO || parser.current_token_type == TOKEN_EOF || parser.current_token_type == TOKEN_ELIF || parser.current_token_type == TOKEN_EXCEPT {
-			return exprs
+			parser.ParserEat(parser.current_token_type)
+			Statements = append(Statements, BinopExpr)
+		} else if parser.current_token_type == TOKEN_LESS_EQUALS || parser.current_token_type == TOKEN_GREATER_EQUALS || parser.current_token_type == TOKEN_LESS_THAN || parser.current_token_type == TOKEN_GREATER_THAN || parser.current_token_type == TOKEN_IS_EQUALS || parser.current_token_type == TOKEN_NOT_EQUALS || parser.current_token_type == TOKEN_OR || parser.current_token_type == TOKEN_AND {
+			CompareExpr := Compare {
+				op: uint8(parser.current_token_type),
+			}
+			parser.ParserEat(parser.current_token_type)
+			Statements = append(Statements, CompareExpr)
+		} else if parser.current_token_type == TOKEN_EOF || parser.current_token_type == TOKEN_DO ||
+		    parser.current_token_type == TOKEN_END || parser.current_token_type == TOKEN_ELIF ||
+			parser.current_token_type == TOKEN_ELSE || parser.current_token_type == TOKEN_EXCEPT || parser.current_token_type == TOKEN_R_BRACKET {
+			break
 		} else {
-			fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value '%s'", parser.line, parser.column, parser.current_token_value))
+			fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`.", parser.line, parser.column, parser.current_token_value))
 			os.Exit(0)
 		}
 	}
-
-	return exprs
+	return Statements
 }
 
 
@@ -900,799 +794,820 @@ func ParserParse(parser *Parser)  ([]Expr) {
 // ----------- Stack -----------
 // -----------------------------
 
-var Stack = []Expr{}
-
-func VisitVar(VarName string, expr Expr) (Expr, *Error) {
-	var VisitedVar Expr
-	if _, ok := VariableScope[VarName]; ok {
-		VisitedVar = VariableScope[VarName]
-	} else {
-		err := Error{}
-		err.message = fmt.Sprintf("Error: undefined variable '%s'", VarName)
-		err.Type = NameError
-		return VisitedVar, &err
-	}
-	return VisitedVar, nil
+type Scope struct {
+    Stack []AST
 }
 
-func OpPush(item Expr) (*Error) {
-	var err *Error
-	if item.Type == ExprId {
-		item, err = VisitVar(item.AsId.Name, item)
-		if err != nil {
-			return err
-		}
-	}
-	Stack = append(Stack, item)
-	return nil
-}
+var Variables = map[string]AST{}
+var Blocks = map[string]AST{}
 
-func OpDrop() (*Error) {
-	if len(Stack)-1 < 0 {
-		err := Error{}
-		err.message = "Error: the stack is empty."
-		err.Type = StackOutRange
-		return &err
-	}
-
-	Stack = Stack[:len(Stack)-1]
-	return nil
-}
-
-func OpDup() (*Error) {
-	if len(Stack) < 1 {
-		err := Error{}
-		err.message = "Error: the stack is empty."
-		err.Type = StackOutRange
-		return &err
-	}
-
-	visitedExpr := Stack[len(Stack)-1]
-	Stack = append(Stack, visitedExpr)
-	return nil
-}
-
-func OpSwap() (*Error) {
-	if len(Stack) < 2 {
-		err := Error{}
-		err.message = "StackOutRangeError: `swap` expected more than two elements in stack."
-		err.Type = StackOutRange
-		return &err
-	}
-	visitedExpr := Stack[len(Stack)-1]
-	visitedExprSecond := Stack[len(Stack)-2]
-	OpDrop()
-	OpDrop()
-	OpPush(visitedExpr)
-	OpPush(visitedExprSecond)
-	return nil
-}
-
-func OpOver() (*Error) {
-	if len(Stack) < 2 {
-		err := Error{}
-		err.message = "StackOutRangeError: `over` expected more than two elements in stack."
-		err.Type = StackOutRange
-		return &err
-	}
-	visitedExprSecond := Stack[len(Stack)-2]
-	OpPush(visitedExprSecond)
-	return nil
-}
-
-func OpRot() (*Error) {
-	if len(Stack) < 3 {
-		err := Error{}
-		err.message = "StackOutRangeError: `rot` expected more than three elements in stack."
-		err.Type = StackOutRange
-		return &err
-	}
-	visitedExpr := Stack[len(Stack)-1]
-	visitedExprSecond := Stack[len(Stack)-2]
-	visitedExprThird := Stack[len(Stack)-3]
-	OpDrop()
-	OpDrop()
-	OpDrop()
-	OpPush(visitedExprSecond)
-	OpPush(visitedExpr)
-	OpPush(visitedExprThird)
-	return nil
-}
-
-func OpInc() (*Error) {
-	if len(Stack) < 1 {
-		err := Error{}
-		err.message = "StackOutRangeError: `inc` expected more than one elements in the stack."
-		err.Type = StackOutRange
-		return &err
-	}
-	visitedExpr := Stack[len(Stack)-1]
-	if visitedExpr.Type != ExprInt {
-		err := Error{}
-		err.message = "TypeError: `inc` expected type <int>."
-		err.Type = TypeError
-		return &err
-	}
-	visitedExpr.AsInt++
-	OpDrop()
-	OpPush(visitedExpr)
-	return nil
-}
-
-func OpDec() (*Error) {
-	if len(Stack) < 1 {
-		err := Error{}
-		err.message = "StackOutRangeError: `dec` expected more than one elements in the stack."
-		err.Type = StackOutRange
-		return &err
-	}
-	visitedExpr := Stack[len(Stack)-1]
-	if visitedExpr.Type != ExprInt {
-		err := Error{}
-		err.message = "TypeError: `dec` expected type <int>."
-		err.Type = TypeError
-		return &err
-	}
-	visitedExpr.AsInt--
-	OpDrop()
-	OpPush(visitedExpr)
-	return nil
-}
-
-func PrintArray(visitedExpr Expr) {
-	fmt.Print("[")
-	for i := 0; i < len(visitedExpr.AsArr); i++ {
-		if i != 0 {
-			fmt.Print(", ")
-		}
-		switch (visitedExpr.AsArr[i].Type) {
-			case ExprInt: fmt.Print(visitedExpr.AsArr[i].AsInt)
-			case ExprStr: fmt.Print(fmt.Sprintf("'%s'", visitedExpr.AsArr[i].AsStr))
-			case ExprTypeType: fmt.Print(visitedExpr.AsArr[i].AsType)
-			case ExprBool: fmt.Print(visitedExpr.AsArr[i].AsBool)
-			case ExprError: fmt.Print(fmt.Sprintf("<Error '%s'>",visitedExpr.AsError))
-			case ExprArr: PrintArray(visitedExpr.AsArr[i])
-		}
-	}
-	fmt.Print("]")
-}
-
-func OpPuts() (*Error) {
-	if len(Stack) < 1 {
-		err := Error{}
-		err.message = "Error: the stack is empty."
-		err.Type = StackOutRange
-		return &err
-	}
-
-	visitedExpr := Stack[len(Stack)-1]
-	switch (visitedExpr.Type) {
-		case ExprInt: fmt.Print(visitedExpr.AsInt)
-		case ExprStr: fmt.Print(visitedExpr.AsStr)
-		case ExprBool: fmt.Print(visitedExpr.AsBool)
-		case ExprTypeType: fmt.Print(fmt.Sprintf("<%s>",visitedExpr.AsType))
-		case ExprError: fmt.Print(fmt.Sprintf("<Error '%s'>",visitedExpr.AsError))
-		case ExprArr: PrintArray(visitedExpr)
-	}
-	OpDrop()
-	return nil
-}
-
-func OpPrint() (*Error) {
-	err := OpPuts()
-	if err != nil {
-		return err
-	}
-	fmt.Println()
-	return nil
-}
-
-func OpPrintS() {
-	fmt.Print(fmt.Sprintf("<%d> ", len(Stack)))
-	for i:=len(Stack); i > 0; i-- {
-		visitedExpr := Stack[len(Stack)-i]
-		switch (visitedExpr.Type) {
-			case ExprInt: fmt.Print(visitedExpr.AsInt)
-			case ExprStr: fmt.Print(visitedExpr.AsStr)
-			case ExprBool: fmt.Print(visitedExpr.AsBool)
-			case ExprTypeType: fmt.Print(fmt.Sprintf("<%s>",visitedExpr.AsType))
-			case ExprError: fmt.Print(fmt.Sprintf("<Error '%d'>",visitedExpr.AsError))
-			case ExprArr: PrintArray(visitedExpr)
-		}
-		fmt.Print(" ")
-	}
-	fmt.Println("← top")
-}
-
-func OpPrintV() {
-	for name, value := range VariableScope {
-		fmt.Print(fmt.Sprintf("%s : ", name))
-		switch (value.Type) {
-			case ExprInt: fmt.Print(value.AsInt)
-			case ExprStr: fmt.Print(value.AsStr)
-			case ExprBool: fmt.Print(value.AsBool)
-			case ExprTypeType: fmt.Print(fmt.Sprintf("<%s>",value.AsType))
-			case ExprError: fmt.Print(fmt.Sprintf("<Error '%s'>",value.AsError))
-			case ExprArr: PrintArray(value)
-		}
-		fmt.Println()
+func InitScope() *Scope {
+	return &Scope{
+		[]AST{},
 	}
 }
 
-func OpInput() {
-	inputReader := bufio.NewReader(os.Stdin)
-	input, _ := inputReader.ReadString('\n')
-	input = input[:len(input)-1]
-	inpExpr := Expr{}
-	inpExpr.Type = ExprStr
-	inpExpr.AsStr = input
-	OpPush(inpExpr)
+func CreateAsList(node AST) (AST) {
+	scope := InitScope()
+	if node.(NewList).ListBody != nil {
+		scope.VisitorVisit(node.(NewList).ListBody, false)
+	}
+	var expr AST = AsList {
+		scope.Stack,
+	}
+	return expr
 }
 
-
-func OpTypeOf() (*Error) {
-	if len(Stack) == 0 {
-		err := Error{}
-		err.message = "StackOutRangeError: `typeof` expected more than one element in the stack."
-		err.Type = StackOutRange
-		return &err
-	}
-
-	visitedExpr := Stack[len(Stack)-1]
-	OpDrop()
-	TypeExpr := Expr{}
-	TypeExpr.Type = ExprTypeType
-	var type_value string
-	if visitedExpr.Type == ExprStr {
-		type_value = "string"
-	} else if visitedExpr.Type == ExprInt {
-		type_value = "int"
-	} else if visitedExpr.Type == ExprBool {
-		type_value = "bool"
-	} else if visitedExpr.Type == ExprTypeType {
-		type_value = "type"
-	} else if  visitedExpr.Type == ExprArr {
-		type_value = "list"
-	} else if  visitedExpr.Type == ExprError {
-		type_value = "error"
-	}
-	TypeExpr.AsType = type_value
-	OpPush(TypeExpr)
-	return nil
-}
-
-func OpCompare(value int) (bool, *Error) {
-	if len(Stack) < 2 {
-		var op string
-		switch (value) {
-			case TOKEN_IS_EQUALS: op = "=="
-			case TOKEN_NOT_EQUALS: op = "!="
-			case TOKEN_LESS_THAN: op = "<"
-			case TOKEN_GREATER_THAN: op = ">"
-			case TOKEN_GREATER_EQUALS: op = ">="
-			case TOKEN_LESS_EQUALS: op = "<="
-		}
-		err := Error{}
-		err.message = fmt.Sprintf("StackOutRangeError: `%s` expected more than two elements in stack.", op)
-		err.Type = StackOutRange
-		return false, &err
-	}
-
-	visitedExpr := Stack[len(Stack)-1]
-	visitedExprSecond := Stack[len(Stack)-2]
-
-	OpDrop()
-	OpDrop()
-
-	if value == TOKEN_IS_EQUALS {
-		if visitedExpr.Type != visitedExprSecond.Type {
-			return false, nil
-		}
-
-		if visitedExpr.Type == ExprInt {
-			return visitedExpr.AsInt == visitedExprSecond.AsInt, nil
-		}
-
-		if visitedExpr.Type == ExprStr {
-			return visitedExpr.AsStr == visitedExprSecond.AsStr, nil
-		}
-
-		if visitedExpr.Type == ExprBool {
-			return visitedExpr.AsBool == visitedExprSecond.AsBool, nil
-		}
-
-		if visitedExpr.Type == ExprTypeType {
-			return visitedExpr.AsType == visitedExprSecond.AsType, nil
-		}
-
-		if visitedExpr.Type == ExprArr {
-			return reflect.DeepEqual(visitedExpr.AsArr, visitedExprSecond.AsArr), nil
-		}
-	}
-
-	if value == TOKEN_NOT_EQUALS {
-		if visitedExpr.Type != visitedExprSecond.Type {
-			return true, nil
-		}
-
-		if visitedExpr.Type == ExprInt {
-			return visitedExpr.AsInt != visitedExprSecond.AsInt, nil
-		}
-
-		if visitedExpr.Type == ExprStr {
-			return visitedExpr.AsStr != visitedExprSecond.AsStr, nil
-		}
-
-		if visitedExpr.Type == ExprBool {
-			return visitedExpr.AsBool != visitedExprSecond.AsBool, nil
-		}
-
-		if visitedExpr.Type == ExprTypeType {
-			return visitedExpr.AsType != visitedExprSecond.AsType, nil
-		}
-
-		if visitedExpr.Type == ExprArr {
-			return !reflect.DeepEqual(visitedExpr.AsArr, visitedExprSecond.AsArr), nil
-		}
-	}
-    
-	if visitedExpr.Type != ExprInt || visitedExprSecond.Type != ExprInt {
-		var op string
-		switch (value) {
-			case TOKEN_LESS_THAN: op = "<"
-			case TOKEN_GREATER_THAN: op = ">"
-			case TOKEN_GREATER_EQUALS: op = ">="
-			case TOKEN_LESS_EQUALS: op = "<="
-		}
-
-		err := Error{}
-		err.message = fmt.Sprintf("TypeError: `%s` expected type <int>.", op)
-		err.Type = TypeError
-		return false, &err
-	}
-
-	if value == TOKEN_LESS_THAN {
-		return visitedExprSecond.AsInt < visitedExpr.AsInt, nil
-	}
-
-	if value == TOKEN_GREATER_THAN {
-		return visitedExprSecond.AsInt > visitedExpr.AsInt, nil
-	}
-
-	if value == TOKEN_GREATER_EQUALS {
-		return visitedExprSecond.AsInt >= visitedExpr.AsInt, nil
-	}
-
-	if value == TOKEN_LESS_EQUALS {
-		return visitedExprSecond.AsInt <= visitedExpr.AsInt, nil
-	}
-
-	return false, nil
-}
-
-func OpLen() (*Error) {
-	if len(Stack) < 1 {
-		err := Error{}
-		err.message = "StackOutRange: `len` expected more than one element in the stack."
-		err.Type = StackOutRange
-		return &err
-	}
-
-	visitedExpr := Stack[len(Stack)-1]
-
-	if visitedExpr.Type != ExprArr && visitedExpr.Type != ExprStr {
-		err := Error{}
-		err.message = "TypeError: `len` expected type <list> or <string>."
-		err.Type = TypeError
-		return &err
-	}
-
-	IntExpr := Expr{}
-	IntExpr.Type = ExprInt
-
-	if visitedExpr.Type == ExprArr {
-		IntExpr.AsInt = float64(len(visitedExpr.AsArr))
-	} else if visitedExpr.Type == ExprStr {
-		IntExpr.AsInt = float64(len(visitedExpr.AsStr))
-	}
-
-	OpPush(IntExpr)
-	return nil
-}
-
-func RetBool() (bool, *Error) {
-	if len(Stack)-1 < 0 {
-		err := Error{}
-		err.message = "StackOutRange: expected more than one element in the stack."
-		err.Type = StackOutRange
-		return false, &err
-	}
-
-	visitedExpr := Stack[len(Stack)-1]
-	if visitedExpr.Type != ExprBool {
-		err := Error{}
-		err.message = "TypeError: expected type <bool>."
-		err.Type = TypeError
-		return false, &err
-	}
-	OpDrop()
-	return visitedExpr.AsBool, nil
-}
-
-func OpIf(expr Expr, isTry bool) (bool, *Error) {
-	BoolValue, err := VisitExpr(expr.AsIf.Op, isTry)
-	if err != nil {
-		return false, err
-	}
-	BoolValue, err = RetBool()
-	if err != nil {
-		return false, err
-	}
-	if BoolValue {
-		return VisitExpr(expr.AsIf.Body, isTry)
-	} else {
-		if expr.AsIf.ElifBodys != nil {
-			i := 0
-			for _, elifOp := range(expr.AsIf.ElifOps) {
-				VisitExpr(elifOp, isTry)
-				BoolValue, err = RetBool()
-				if err != nil {
-					return false, err
-				}
-				if BoolValue {
-					return VisitExpr(expr.AsIf.ElifBodys[i], isTry)
-				}
-				i++
-			}
-		}
-		if expr.AsIf.ElseBody != nil {
-			return VisitExpr(expr.AsIf.ElseBody, isTry)
-		}
-	}
-	return false, nil
-}
-
-func OpCondition(expr Expr) (*Error) {
-	bool_value, err := OpCompare(expr.AsCompare)
-	if err != nil {
-		return err
-	}
-	BoolExpr := Expr{}
-	BoolExpr.Type = ExprBool
-	BoolExpr.AsBool = bool_value
-	OpPush(BoolExpr)
-	return nil
-}
-
-func OpBinop(value int) (*Error) {
-	if len(Stack) < 2 {
-		var op string
-		switch (value) {
-			case TOKEN_PLUS: op = "+"
-			case TOKEN_MINUS: op = "-"
-			case TOKEN_DIV: op = "/"
-			case TOKEN_REM: op = "%"
-			case TOKEN_MUL: op = "*"
-		}
-		err := Error{}
-		err.message = fmt.Sprintf("StackOutRangeError: `%s` expected more than two elements in stack.", op)
-		err.Type = StackOutRange
-		return &err
-	}
-
-	visitedExpr := Stack[len(Stack)-1]
-	visitedExprSecond := Stack[len(Stack)-2]
-	OpDrop()
-	OpDrop()
-
-	ValueExpr := Expr{}
-	if value == TOKEN_PLUS {
-		if visitedExpr.Type == ExprStr && visitedExprSecond.Type == ExprStr {
-			ValueExpr.Type = ExprStr
-			ValueExpr.AsStr =  visitedExprSecond.AsStr + visitedExpr.AsStr
-		} else if visitedExpr.Type == ExprInt && visitedExprSecond.Type == ExprInt {
-			ValueExpr.Type = ExprInt
-			ValueExpr.AsInt = visitedExpr.AsInt + visitedExprSecond.AsInt
+func (scope *Scope) OpPush(node AST) (*Error) {
+	_, IsList := node.(NewList);
+	_, IsVar := node.(Var);
+	if IsList {
+		scope.Stack = append(scope.Stack, CreateAsList(node))
+	} else if IsVar {
+		if _, ok := Variables[node.(Var).Name]; ok {
+			VarValue := Variables[node.(Var).Name]
+			scope.Stack = append(scope.Stack, VarValue)
 		} else {
 			err := Error{}
-			err.message = "TypeError: expected type <int>."
+			err.message = fmt.Sprintf("NameError: undefined variable `%s`", node.(Var).Name)
+			err.Type = NameError
+			return &err
+		}
+	} else {
+		scope.Stack = append(scope.Stack, node)
+	}
+	return nil
+}
+
+func (scope *Scope) OpDrop() (*Error) {
+	if len(scope.Stack) < 1 {
+		err := Error{}
+		err.message = "StackIndexError: `drop` expected one or more element in the stack."
+		err.Type = StackIndexError
+		return &err
+	}
+	scope.Stack = scope.Stack[:len(scope.Stack)-1]
+	return nil
+}
+
+func (scope *Scope) OpSwap() (*Error) {
+	if len(scope.Stack) < 2 {
+		err := Error{}
+		err.message = "StackIndexError: `swap` expected two or more element in the stack."
+		err.Type = StackIndexError
+		return &err
+	}
+	first := scope.Stack[len(scope.Stack)-1]
+	second := scope.Stack[len(scope.Stack)-2]
+	scope.OpDrop()
+	scope.OpDrop()
+	scope.OpPush(first)
+	scope.OpPush(second)
+	return nil
+}
+
+func RetTokenAsStr(token uint8) string {
+	return tokens[token]
+}
+
+func (scope *Scope) OpBinop(op uint8) (*Error) {
+	if len(scope.Stack) < 2 {
+		err := Error{}
+		err.message = fmt.Sprintf("StackIndexError: `%s` expected more than 2 <int> type elements in the stack.", RetTokenAsStr(op))
+		err.Type = StackIndexError
+		return &err
+	}
+	first := scope.Stack[len(scope.Stack)-1]
+	second := scope.Stack[len(scope.Stack)-2]
+	_, ok := first.(AsInt);
+	_, ok2 := second.(AsInt);
+	if !ok || !ok2 {
+		err := Error{}
+		err.message = fmt.Sprintf("StackIndexError: `%s` expected type <int>.", RetTokenAsStr(op))
+		err.Type = TypeError
+		return &err
+	}
+	var val int
+	switch op {
+		case TOKEN_PLUS: val = first.(AsInt).IntValue + second.(AsInt).IntValue
+		case TOKEN_MINUS:  val = second.(AsInt).IntValue - first.(AsInt).IntValue
+		case TOKEN_MUL: val = second.(AsInt).IntValue * first.(AsInt).IntValue
+		case TOKEN_DIV: val = second.(AsInt).IntValue / first.(AsInt).IntValue
+		case TOKEN_REM: val = second.(AsInt).IntValue % first.(AsInt).IntValue
+	}
+	scope.OpDrop()
+	scope.OpDrop()
+	expr := AsInt {
+		val,
+	}
+	scope.OpPush(expr)
+	return nil
+}
+
+func (scope *Scope) OpCompare(op uint8) (*Error) {
+	if len(scope.Stack) < 2 {
+		err := Error{}
+		err.message = fmt.Sprintf("StackIndexError: `%s` expected more than 2 elements in the stack.", RetTokenAsStr(op))
+		err.Type = StackIndexError
+		return &err
+	}
+	first := scope.Stack[len(scope.Stack)-1]
+	second := scope.Stack[len(scope.Stack)-2]
+	var val bool
+	if op == TOKEN_IS_EQUALS {
+		if reflect.TypeOf(first) != reflect.TypeOf(second) {
+			val = false
+		} else {
+			switch first.(type) {
+				case AsStr: val = first.(AsStr).StringValue == second.(AsStr).StringValue
+				case AsInt:  val = second.(AsInt).IntValue == first.(AsInt).IntValue
+				case AsBool: val = second.(AsBool).BoolValue == first.(AsBool).BoolValue
+				case AsType: val = second.(AsType).TypeValue == first.(AsType).TypeValue
+				case AsError: val = second.(AsError).err == first.(AsError).err
+				case AsList: val = reflect.DeepEqual(second.(AsList).ListArgs, first.(AsList).ListArgs)
+			}
+		}
+	} else if op == TOKEN_NOT_EQUALS {
+		if reflect.TypeOf(first) != reflect.TypeOf(second) {
+			val = true
+		} else {
+			switch first.(type) {
+				case AsStr: val = first.(AsStr).StringValue != second.(AsStr).StringValue
+				case AsInt:  val = second.(AsInt).IntValue != first.(AsInt).IntValue
+				case AsBool: val = second.(AsBool).BoolValue != first.(AsBool).BoolValue
+				case AsType: val = second.(AsType).TypeValue != first.(AsType).TypeValue
+				case AsError: val = second.(AsError).err != first.(AsError).err
+				case AsList: val = !reflect.DeepEqual(second.(AsList).ListArgs, first.(AsList).ListArgs)
+			}
+		}
+	} else if op == TOKEN_OR || op == TOKEN_AND {
+		_, ok := first.(AsBool);
+		_, ok2 := second.(AsBool);
+		if !ok || !ok2 {
+			err := Error{}
+			err.message = fmt.Sprintf("StackIndexError: `%s` expected 2 <bool> type elements in the stack.", RetTokenAsStr(op))
 			err.Type = TypeError
 			return &err
 		}
-	} else if visitedExpr.Type != ExprInt && visitedExprSecond.Type != ExprInt {
-		err := Error{}
-		err.message = "TypeError: expected type <int>."
-		err.Type = TypeError
-		return &err
+		switch op {
+			case TOKEN_OR: val = second.(AsBool).BoolValue || first.(AsBool).BoolValue
+			case TOKEN_AND: val = second.(AsBool).BoolValue && first.(AsBool).BoolValue
+		}
 	} else {
-		ValueExpr.Type = ExprInt
-		if value == TOKEN_MINUS {
-			ValueExpr.AsInt = visitedExprSecond.AsInt - visitedExpr.AsInt
-		} else if value == TOKEN_MUL {
-			ValueExpr.AsInt = visitedExpr.AsInt * visitedExprSecond.AsInt
-		} else if value == TOKEN_DIV {
-			ValueExpr.AsInt = visitedExprSecond.AsInt / visitedExpr.AsInt
-		} else if value == TOKEN_REM {
-			if visitedExprSecond.AsInt == math.Trunc(visitedExprSecond.AsInt) && visitedExpr.AsInt == math.Trunc(visitedExpr.AsInt) {
-				ValueExpr.AsInt = float64(int(visitedExprSecond.AsInt) % int(visitedExpr.AsInt))
-			} else {
-				err := Error{}
-				err.message = "TypeError: operator `%` not defined on type <int(float)>"
-				err.Type = TypeError
-				return &err
-			}
+		_, ok := first.(AsInt);
+		_, ok2 := second.(AsInt);
+		if !ok || !ok2 {
+			err := Error{}
+			err.message = fmt.Sprintf("StackIndexError: `%s` expected 2 <int> type elements in the stack.", RetTokenAsStr(op))
+			err.Type = TypeError
+			return &err
+		}
+		switch op {
+			case TOKEN_LESS_THAN: val = second.(AsInt).IntValue < first.(AsInt).IntValue
+			case TOKEN_LESS_EQUALS: val = second.(AsInt).IntValue <= first.(AsInt).IntValue
+			case TOKEN_GREATER_THAN: val = second.(AsInt).IntValue > first.(AsInt).IntValue
+			case TOKEN_GREATER_EQUALS: val = second.(AsInt).IntValue >= first.(AsInt).IntValue
 		}
 	}
-
-	OpPush(ValueExpr)
+	scope.OpDrop()
+	scope.OpDrop()
+	expr := AsBool {
+		val,
+	}
+	scope.OpPush(expr)
 	return nil
 }
 
-func OpImport(expr Expr) (*Error) {
-	if _, err := os.Stat(expr.AsImport); os.IsNotExist(err) {
+func PrintAsList(node AST) {
+	print("{ ")
+	for i := 0; i < len(node.(AsList).ListArgs); i++ {
+		switch node.(AsList).ListArgs[i].(type) {
+			case AsStr:
+				print(node.(AsList).ListArgs[i].(AsStr).StringValue)
+			case AsInt:
+				print(strconv.Itoa(node.(AsList).ListArgs[i].(AsInt).IntValue))
+			case AsBool:
+				print(node.(AsList).ListArgs[i].(AsBool).BoolValue)
+			case AsList:
+				PrintAsList(node.(AsList).ListArgs[i])
+		}
+		print(" ")
+	}
+	print("}")
+}
+
+func (scope *Scope) OpPrint() (*Error) {
+	if len(scope.Stack) < 1 {
 		err := Error{}
-		err.message = fmt.Sprintf("ImportError: file path '%s' does not exist.",expr.AsImport)
-		err.Type = ImportError
+		err.message = "StackIndexError: `print` the stack is empty."
+		err.Type = StackIndexError
 		return &err
 	}
-	file, err := os.Open(expr.AsImport)
-	if err != nil {
-		panic(err)
+	expr := scope.Stack[len(scope.Stack)-1]
+	switch expr.(type) {
+		case AsStr: fmt.Println(expr.(AsStr).StringValue)
+		case AsInt: fmt.Println(expr.(AsInt).IntValue)
+		case AsBool: fmt.Println(expr.(AsBool).BoolValue)
+		case AsType: fmt.Println(fmt.Sprintf("<%s>" ,expr.(AsType).TypeValue))
+		case AsError:
+			switch expr.(AsError).err {
+				case NameError: fmt.Println("<error 'NameError'>")
+				case StackIndexError: fmt.Println("<error 'StackIndexError'>")
+				case ImportError: fmt.Println("<error 'ImportError'>")
+				case IndexError: fmt.Println("<error 'IndexError'>")
+				case TypeError: fmt.Println("<error 'TypeError'>")
+				default: fmt.Println(fmt.Sprintf("unexpected error <%d>", expr.(AsError).err))
+			}
+		case AsList:
+			PrintAsList(expr)
+			fmt.Println()
 	}
-	lexer := LexerInit(file)
-	parser := ParserInit(lexer)
-	exprs := ParserParse(parser)
-	VisitExpr(exprs, false)
+	scope.OpDrop()
 	return nil
 }
 
-func OpFor(expr Expr, isTry bool) (*Error) {
-	VisitExpr(expr.AsFor.Op, isTry)
+func (scope *Scope) OpPuts() (*Error) {
+	if len(scope.Stack) < 1 {
+		err := Error{}
+		err.message = "StackIndexError: `puts` the stack is empty."
+		err.Type = StackIndexError
+		return &err
+	}
+	expr := scope.Stack[len(scope.Stack)-1]
+	switch expr.(type) {
+		case AsStr: fmt.Print(expr.(AsStr).StringValue)
+		case AsInt: fmt.Print(expr.(AsInt).IntValue)
+		case AsBool: fmt.Print(expr.(AsBool).BoolValue)
+		case AsType: fmt.Print(fmt.Sprintf("<%s>" ,expr.(AsType).TypeValue))
+		case AsError:
+			switch expr.(AsError).err {
+				case NameError: fmt.Print("<error 'NameError'>")
+				case StackIndexError: fmt.Print("<error 'StackIndexError'>")
+				case ImportError: fmt.Print("<error 'ImportError'>")
+				case IndexError: fmt.Print("<error 'IndexError'>")
+				case TypeError: fmt.Print("<error 'TypeError'>")
+				default: fmt.Print(fmt.Sprintf("unexpected error <%d>", expr.(AsError).err))
+			}
+		case AsList:
+			PrintAsList(expr)
+	}
+	scope.OpDrop()
+	return nil
+}
+
+func (scope *Scope) OpPrintS() {
+	fmt.Print(fmt.Sprintf("<%d> ", len(scope.Stack)))
+	for i:=len(scope.Stack); i > 0; i-- {
+		expr := scope.Stack[len(scope.Stack)-i]
+		switch expr.(type) {
+			case AsStr: fmt.Print(expr.(AsStr).StringValue)
+			case AsInt: fmt.Print(expr.(AsInt).IntValue)
+			case AsBool: fmt.Print(expr.(AsBool).BoolValue)
+			case AsType: fmt.Print(fmt.Sprintf("<%s>" ,expr.(AsType).TypeValue))
+			case AsError:
+				switch expr.(AsError).err {
+					case NameError: fmt.Print("<error 'NameError'>")
+					case StackIndexError: fmt.Print("<error 'StackIndexError'>")
+					case ImportError: fmt.Print("<error 'ImportError'>")
+					case IndexError: fmt.Print("<error 'IndexError'>")
+					case TypeError: fmt.Print("<error 'TypeError'>")
+					default: fmt.Print(fmt.Sprintf("unexpected error <%d>", expr.(AsError).err))
+				}
+			case AsList:
+				PrintAsList(expr)
+		}
+		print(" ")
+	}
+}
+
+func (scope *Scope) OpIf(node AST, IsTry bool) (bool, *Error) {
+	scope.VisitorVisit(node.(If).IfOp, IsTry)
+	var BreakValue bool = false
+	var err *Error = nil
+	if len(scope.Stack) < 1 {
+		err := Error{}
+		err.message = "StackIndexError: if statement expected one or more <bool> type element in the stack."
+		err.Type = StackIndexError
+		return BreakValue, &err
+	}
+	expr := scope.Stack[len(scope.Stack)-1]
+	if _, ok := expr.(AsBool); !ok {
+		err := Error{}
+		err.message = "TypeError: if statement expected one or more <bool> type element in the stack."
+		err.Type = StackIndexError
+		return BreakValue, &err
+	}
+	scope.OpDrop()
+	if expr.(AsBool).BoolValue {
+		BreakValue, err = scope.VisitorVisit(node.(If).IfBody, IsTry)
+		if err != nil {
+			return BreakValue, err
+		}
+		return BreakValue, nil
+	}
+	for i := 0; i < len(node.(If).ElifOps); i++ {
+		scope.VisitorVisit(node.(If).ElifOps[i], IsTry)
+		if len(scope.Stack) < 1 {
+			err := Error{}
+			err.message = "StackIndexError: if statement expected one or more <bool> type element in the stack."
+			err.Type = StackIndexError
+			return BreakValue, &err
+		}
+		expr := scope.Stack[len(scope.Stack)-1]
+		if _, ok := expr.(AsBool); !ok {
+			err := Error{}
+			err.message = "TypeError: if statement expected one or more <bool> type element in the stack."
+			err.Type = StackIndexError
+			return BreakValue, &err
+		}
+		scope.OpDrop()
+		if expr.(AsBool).BoolValue {
+			BreakValue, err = scope.VisitorVisit(node.(If).ElifBodys[i], IsTry)
+			return BreakValue, err
+		}
+	}
+	if node.(If).ElseBody != nil {
+		BreakValue, err = scope.VisitorVisit(node.(If).ElseBody, IsTry)
+	}
+	return BreakValue, err
+}
+
+func (scope *Scope) OpFor(node AST, IsTry bool) (*Error) {
+	var BreakValue bool
 	for {
-		BoolValue, err := RetBool()
+		_, err := scope.VisitorVisit(node.(For).ForOp, IsTry)
 		if err != nil {
 			return err
 		}
-		if !BoolValue {
-			break
+		if len(scope.Stack) < 1 {
+			err := Error{}
+			err.message = "StackIndexError: for loop expected one or more <bool> type element in the stack."
+			err.Type = StackIndexError
+			return &err
 		}
-		BreakValue, err := VisitExpr(expr.AsFor.Body, isTry)
+		expr := scope.Stack[len(scope.Stack)-1]
+		if _, ok := expr.(AsBool); !ok {
+			err := Error{}
+			err.message = "TypeError: for loop expected one or more <bool> type element in the stack."
+			err.Type = StackIndexError
+			return &err
+		}
+		scope.OpDrop()
+		if !expr.(AsBool).BoolValue {
+			return nil
+		}
+		BreakValue, err = scope.VisitorVisit(node.(For).ForBody, IsTry)
 		if err != nil {
 			return err
 		}
-		if BreakValue == true {break}
-		VisitExpr(expr.AsFor.Op, isTry)
+		if BreakValue {
+			return nil
+		}
 	}
 	return nil
 }
 
-func OpAppend(expr Expr) {
-	if len(Stack) < 2 {
-		fmt.Println("Error: 'append' expected more than two element in stack."); os.Exit(0);
-	}
-	visitedList := Stack[len(Stack)-2]
-	visitedExpr := Stack[len(Stack)-1]
-	if visitedList.Type != ExprArr {
-		fmt.Println("TypeError: 'append' expected type <list>"); os.Exit(0);
-	}
-	visitedList.AsArr = append(visitedList.AsArr, visitedExpr)
-	OpDrop()
-	OpDrop()
-	OpPush(visitedList)
-}
-
-func OpReplace() {
-	if len(Stack) < 3 {
-		fmt.Println("Error: 'replace' expected more than three element in stack."); os.Exit(0);
-	}
-	visitedList := Stack[len(Stack)-3]
-	visitedValue := Stack[len(Stack)-2]
-	visitedIndex := Stack[len(Stack)-1]
-	if visitedIndex.Type != ExprInt {
-		fmt.Println("TypeError: 'replace' index expected type <int>"); os.Exit(0);
-	}
-	if visitedIndex.AsInt != math.Trunc(visitedIndex.AsInt) {
-		fmt.Println("Error: list index must be integer not float"); os.Exit(0);
-	}
-	if int(visitedIndex.AsInt) >= len(visitedList.AsArr) {
-		fmt.Println("Error: 'replace' index out of range."); os.Exit(0);
-	}
-	if visitedList.Type != ExprArr {
-		fmt.Println("TypeError: 'replace' expected type <list>"); os.Exit(0);
-	}
-	visitedList.AsArr[int(visitedIndex.AsInt)] = visitedValue
-	OpDrop()
-	OpDrop()
-	OpDrop()
-	OpPush(visitedList)
-}
-
-func RemoveIndex(s []Expr, index int) []Expr {
-    return append(s[:index], s[index+1:]...)
-}
-
-func OpRemove() {
-	if len(Stack) < 2 {
-		fmt.Println("Error: 'remove' expected more than three element in stack."); os.Exit(0);
-	}
-	visitedList := Stack[len(Stack)-2]
-	visitedIndex := Stack[len(Stack)-1]
-	if visitedIndex.Type != ExprInt {
-		fmt.Println("TypeError: 'remove' index expected type <int>"); os.Exit(0);
-	}
-	if visitedIndex.AsInt != math.Trunc(visitedIndex.AsInt) {
-		fmt.Println("Error: list index must be integer not float"); os.Exit(0);
-	}
-	if int(visitedIndex.AsInt) >= len(visitedList.AsArr) {
-		fmt.Println("Error: 'remove' index out of range."); os.Exit(0);
-	}
-	if visitedList.Type != ExprArr {
-		fmt.Println("TypeError: 'remove' expected type <list>"); os.Exit(0);
-	}
-
-	visitedList.AsArr = RemoveIndex(visitedList.AsArr, int(visitedIndex.AsInt))
-
-	OpDrop()
-	OpDrop()
-	OpPush(visitedList)
-}
-
-func OpRead() {
-	if len(Stack) < 2 {
-		fmt.Println("Error: 'read' expected more than two element in stack."); os.Exit(0);
-	}
-	visitedList := Stack[len(Stack)-2]
-	visitedIndex := Stack[len(Stack)-1]
-	if visitedIndex.Type != ExprInt {
-		fmt.Println("TypeError: 'read' index expected type <int>"); os.Exit(0);
-	}
-	if visitedList.Type != ExprArr && visitedList.Type != ExprStr {
-		fmt.Println("TypeError: 'read' expected type <list> or <string>"); os.Exit(0);
-	}
-	if visitedIndex.AsInt != math.Trunc(visitedIndex.AsInt) {
-		fmt.Println("Error: list index must be integer not float"); os.Exit(0);
-	}
-	OpDrop()
-	if visitedList.Type == ExprArr {
-		OpPush(visitedList.AsArr[int(visitedIndex.AsInt)])
-	} else if visitedList.Type == ExprStr {
-		StrExpr := Expr{}
-		StrExpr.Type = ExprStr
-		StrExpr.AsStr = string([]rune(visitedList.AsStr)[int(visitedIndex.AsInt)])
-		OpPush(StrExpr)
-	}
-}
-
-func OpTry(expr Expr) (*Error) {
-	_, err := VisitExpr(expr.AsTry.TryBody, true)
-	if err != nil && expr.AsTry.ExceptErrors != nil {
-		for i := 0; i < len(expr.AsTry.ExceptErrors); i++ {
-			if err.Type == expr.AsTry.ExceptErrors[i].AsError {
-				_, err = VisitExpr(expr.AsTry.ExceptBodys[i], true)
+func (scope *Scope) OpTry(node AST) (*Error) {
+	_, err := scope.VisitorVisit(node.(Try).TryBody, true)
+	if err != nil {
+		for i := 0; i < len(node.(Try).ExceptErrors); i++ {
+			if node.(Try).ExceptErrors[i].(AsError).err == err.Type {
+				scope.VisitorVisit(node.(Try).ExceptBodys[i], false)
+				return nil
 			}
 		}
 	}
 	return err
 }
 
-
-// -----------------------------
-// ---------- Variable ---------
-// -----------------------------
-
-var VariableScope = map[string]Expr{}
-
-func OpVardef(expr Expr) {
-	if len(Stack) < 1 {
-		fmt.Println("Error: variable definition expected more than one element in stack.")
-		os.Exit(0)
+func (scope *Scope) OpInc() (*Error) {
+	if len(scope.Stack) < 1 {
+		err := Error{}
+		err.message = "StackIndexError: `inc` expected one or more <int> type element in the stack."
+		err.Type = StackIndexError
+		return &err
 	}
-	exprValue := Stack[len(Stack)-1]
-	VariableScope[expr.AsVardef.Name] = exprValue
-	OpDrop()
+	first := scope.Stack[len(scope.Stack)-1]
+	_, ok := first.(AsInt);
+	if !ok {
+		err := Error{}
+		err.message = "StackIndexError: `inc` expected one or more <int> type element in the stack."
+		err.Type = StackIndexError
+		return &err
+	}
+	scope.OpDrop()
+	val := first.(AsInt).IntValue + 1
+	expr := AsInt {
+		val,
+	}
+	scope.OpPush(expr)
+	return nil
 }
 
-
-// -----------------------------
-// ----------- Block -----------
-// -----------------------------
-
-var BlockScope = map[string][]Expr{}
-
-func OpBlockdef(expr Expr) {
-	if _, ok := BlockScope[expr.AsBlockdef.Name]; ok {
-		fmt.Println(fmt.Sprintf("Error: block '%s' is already defined", expr.AsBlockdef.Name))
-		os.Exit(0)
+func (scope *Scope) OpDec() (*Error) {
+	if len(scope.Stack) < 1 {
+		err := Error{}
+		err.message = "StackIndexError: `dec` expected one or more <int> type element in the stack."
+		err.Type = StackIndexError
+		return &err
 	}
-	BlockScope[expr.AsBlockdef.Name] = expr.AsBlockdef.Body
+	first := scope.Stack[len(scope.Stack)-1]
+	_, ok := first.(AsInt);
+	if !ok {
+		err := Error{}
+		err.message = "StackIndexError: `dec` expected one or more <int> type element in the stack."
+		err.Type = StackIndexError
+		return &err
+	}
+	scope.OpDrop()
+	val := first.(AsInt).IntValue - 1
+	expr := AsInt {
+		val,
+	}
+	scope.OpPush(expr)
+	return nil
 }
 
-func OpCallBlock(expr Expr, isTry bool) (*Error) {
-	var err *Error
-	if _, ok := BlockScope[expr.AsCall.Value]; ok {
-		BlockBody := BlockScope[expr.AsCall.Value]
-		_, err = VisitExpr(BlockBody, isTry)
-		return err
+func (scope *Scope) OpDup() (*Error) {
+	if len(scope.Stack) < 1 {
+		err := Error{}
+		err.message = "StackIndexError: `dup` expected one or more <int> type element in the stack."
+		err.Type = StackIndexError
+		return &err
+	}
+	first := scope.Stack[len(scope.Stack)-1]
+	scope.OpPush(first)
+	return nil
+}
+
+func (scope *Scope) OpAppend() (*Error) {
+	if len(scope.Stack) < 2 {
+		err := Error{}
+		err.message = "StackIndexError: `append` expected two or more element in the stack."
+		err.Type = StackIndexError
+		return &err
+	}
+	if _, ok := scope.Stack[len(scope.Stack)-2].(AsList); !ok {
+		err := Error{}
+		err.message = "TypeError: `append` expected <list> type element in the stack."
+		err.Type = TypeError
+		return &err
+	}
+	a := append(scope.Stack[len(scope.Stack)-2].(AsList).ListArgs, scope.Stack[len(scope.Stack)-1])
+	scope.OpDrop()
+	scope.OpDrop()
+	var NewList AST = AsList {
+		a,
+	}
+	scope.OpPush(NewList)
+	return nil
+}
+
+func (scope *Scope) OpRead() (*Error) {
+	if len(scope.Stack) < 2 {
+		err := Error{}
+		err.message = "StackIndexError: `read` expected two or more element in the stack."
+		err.Type = StackIndexError
+		return &err
+	}
+	visitedList := scope.Stack[len(scope.Stack)-2]
+	visitedIndex := scope.Stack[len(scope.Stack)-1]
+	if _, ok := visitedIndex.(AsInt); !ok {
+		err := Error{}
+		err.message = "TypeError: `read` index expected <int> type element in the stack."
+		err.Type = TypeError
+		return &err
+	}
+	_, ok := visitedList.(AsStr);
+	_, ok2 := visitedList.(AsList);
+	if !ok && !ok2 {
+		err := Error{}
+		err.message = "TypeError: `read` expected <list> or <string> type element in the stack."
+		err.Type = TypeError
+		return &err
+	}
+	scope.OpDrop()
+	if _, ok := visitedList.(AsList); ok {
+		if len(visitedList.(AsList).ListArgs) <= visitedIndex.(AsInt).IntValue {
+			err := Error{}
+			err.message = "IndexError: `read` type <list> element index out of range."
+			err.Type = IndexError
+			return &err
+		}
+		scope.OpPush(visitedList.(AsList).ListArgs[int(visitedIndex.(AsInt).IntValue)])
 	} else {
-		fmt.Println("Error: undefined block '" + expr.AsCall.Value + "'")
-		os.Exit(0)
+		if len(visitedList.(AsStr).StringValue) <= visitedIndex.(AsInt).IntValue {
+			err := Error{}
+			err.message = "IndexError: `read` type <string> element index out of range."
+			err.Type = IndexError
+			return &err
+		}
+		StringValue := string([]rune(visitedList.(AsStr).StringValue)[int(visitedIndex.(AsInt).IntValue)])
+		var StrExpr AST = AsStr {
+			StringValue,
+		}
+		scope.OpPush(StrExpr)
 	}
 	return nil
 }
 
+func (scope *Scope) OpReplace() (*Error) {
+	if len(scope.Stack) < 3 {
+		err := Error{}
+		err.message = "StackIndexError: `replace` expected three or more element in the stack."
+		err.Type = StackIndexError
+		return &err
+	}
+	visitedList := scope.Stack[len(scope.Stack)-3]
+	visitedValue := scope.Stack[len(scope.Stack)-2]
+	visitedIndex := scope.Stack[len(scope.Stack)-1]
+	if _, ok := visitedIndex.(AsInt); !ok {
+		err := Error{}
+		err.message = "TypeError: `replace` index expected <int> type element in the stack."
+		err.Type = TypeError
+		return &err
+	}
+	if _, ok := visitedList.(AsList); !ok {
+		err := Error{}
+		err.message = "TypeError: `replace` expected <list> type element in the stack."
+		err.Type = TypeError
+		return &err
+	}
+	if len(visitedList.(AsList).ListArgs) <= visitedIndex.(AsInt).IntValue {
+		err := Error{}
+		err.message = "IndexError: `replace` type <list> element index out of range."
+		err.Type = IndexError
+		return &err
+	}
+	visitedList.(AsList).ListArgs[int(visitedIndex.(AsInt).IntValue)] = visitedValue
+	scope.OpDrop()
+	scope.OpDrop()
+	scope.OpDrop()
+	scope.OpPush(visitedList)
+	return nil
+}
+
+func (scope *Scope) OpRemove() (*Error) {
+	if len(scope.Stack) < 2 {
+		err := Error{}
+		err.message = "StackIndexError: `remove` expected two or more element in the stack."
+		err.Type = StackIndexError
+		return &err
+	}
+	visitedList := scope.Stack[len(scope.Stack)-2]
+	visitedIndex := scope.Stack[len(scope.Stack)-1]
+	if _, ok := visitedIndex.(AsInt); !ok {
+		err := Error{}
+		err.message = "TypeError: `remove` index expected <int> type element in the stack."
+		err.Type = TypeError
+		return &err
+	}
+	if _, ok := visitedList.(AsList); !ok {
+		err := Error{}
+		err.message = "TypeError: `remove` expected <list> type element in the stack."
+		err.Type = TypeError
+		return &err
+	}
+	if len(visitedList.(AsList).ListArgs) <= visitedIndex.(AsInt).IntValue {
+		err := Error{}
+		err.message = "IndexError: `remove` type <list> element index out of range."
+		err.Type = IndexError
+		return &err
+	}
+
+	NewList := append(visitedList.(AsList).ListArgs[:int(visitedIndex.(AsInt).IntValue)], visitedList.(AsList).ListArgs[int(visitedIndex.(AsInt).IntValue)+1:]...)
+    var ListExpr AST = AsList {
+		NewList,
+	}
+	visitedList = nil
+	scope.OpDrop()
+	scope.OpDrop()
+	scope.OpPush(ListExpr)
+	return nil
+}
+
+func (scope *Scope) OpIn() (*Error) {
+	if len(scope.Stack) < 2 {
+		err := Error{}
+		err.message = "StackIndexError: `in` expected two or more element in the stack."
+		err.Type = StackIndexError
+		return &err
+	}
+	visitedVal := scope.Stack[len(scope.Stack)-2]
+	visitedList := scope.Stack[len(scope.Stack)-1]
+	scope.OpDrop()
+	scope.OpDrop()
+	if _, ok := visitedList.(AsList); !ok {
+		err := Error{}
+		err.message = "TypeError: `in` expected <list> type element in the stack."
+		err.Type = TypeError
+		return &err
+	}
+	for i := 0; i < len(visitedList.(AsList).ListArgs); i++ {
+		var val AST
+		switch visitedVal.(type) {
+			case AsStr: val = visitedVal.(AsStr)
+			case AsInt: val = visitedVal.(AsInt)
+			case AsList: val = visitedVal.(AsList)
+		}
+		if visitedList.(AsList).ListArgs[i] == val {
+			expr := AsBool {
+				true,
+			}
+			scope.OpPush(expr)
+			return nil
+		}
+	}
+	expr := AsBool {
+		false,
+	}
+	scope.OpPush(expr)
+	return nil
+}
+
+func (scope *Scope) OpTypeOf() (*Error) {
+	if len(scope.Stack) < 1 {
+		err := Error{}
+		err.message = "StackIndexError: `typeof` expected one or more element in the stack."
+		err.Type = StackIndexError
+		return &err
+	}
+	visitedVal := scope.Stack[len(scope.Stack)-1]
+	var TypeVal string
+	switch visitedVal.(type) {
+		case AsStr: TypeVal = "string"
+		case AsInt: TypeVal = "int"
+		case AsList: TypeVal = "list"
+		case AsBool: TypeVal = "bool"
+		case AsType: TypeVal = "type"
+		case AsError: TypeVal = "error"
+	}
+	expr := AsType {
+		TypeVal,
+	}
+	scope.OpDrop()
+	scope.OpPush(expr)
+	return nil
+}
+
+func (scope *Scope) OpRot() (*Error) {
+	if len(scope.Stack) < 3 {
+		err := Error{}
+		err.message = "StackIndexError: `rot` expected more than three elements in the stack."
+		err.Type = StackIndexError
+		return &err
+	}
+	visitedExpr := scope.Stack[len(scope.Stack)-1]
+	visitedExprSecond := scope.Stack[len(scope.Stack)-2]
+	visitedExprThird := scope.Stack[len(scope.Stack)-3]
+	scope.OpDrop()
+	scope.OpDrop()
+	scope.OpDrop()
+	scope.OpPush(visitedExprSecond)
+	scope.OpPush(visitedExpr)
+	scope.OpPush(visitedExprThird)
+	return nil
+}
+
+func (scope *Scope) OpOver() (*Error) {
+	if len(scope.Stack) < 2 {
+		err := Error{}
+		err.message = "StackIndexError: `over` expected more than two elements in the stack."
+		err.Type = StackIndexError
+		return &err
+	}
+	scope.OpPush(scope.Stack[len(scope.Stack)-2])
+	return nil
+}
+
+func (scope *Scope) OpVardef(name string) (*Error) {
+	if len(scope.Stack) < 1 {
+		err := Error{}
+		err.message = fmt.Sprintf("StackIndexError: variable `%s` definiton expected one or more element in the stack.", name)
+		err.Type = StackIndexError
+		return &err
+	}
+	VarValue := scope.Stack[len(scope.Stack)-1]
+	Variables[name] = VarValue
+	scope.OpDrop()
+	return nil
+}
+
+func (scope *Scope) OpBlockdef(node AST) (*Error) {
+	if _, ok := Blocks[node.(Blockdef).Name]; ok {
+		err := Error{}
+		err.message = fmt.Sprintf("NameError: block `%s` is already defined.", node.(Blockdef).Name)
+		err.Type = NameError
+		return &err
+	}
+	Blocks[node.(Blockdef).Name] = node.(Blockdef).BlockBody
+	return nil
+}
+
+func (scope *Scope) OpCallBlock(name string) *Error {
+	if _, ok := Blocks[name]; !ok {
+		err := Error{}
+		err.message = fmt.Sprintf("NameError: undefined block `%s`.", name)
+		err.Type = NameError
+		return &err
+	}
+	scope.VisitorVisit(Blocks[name], false)
+	return nil
+}
+
+func (scope *Scope) OpImport(FileName string) (*Error) {
+	if _, err := os.Stat(FileName); os.IsNotExist(err) {
+		err := Error{}
+		err.message = fmt.Sprintf("ImportError: invalid file name `%s`.", FileName)
+		err.Type = ImportError
+		return &err
+	}
+	file, err := os.Open(FileName)
+	if err != nil {
+		panic(err)
+	}
+	lexer := LexerInit(file)
+	parser := ParserInit(lexer)
+	ast := ParserParse(parser)
+	scope.VisitorVisit(ast, false)
+	return nil
+}
 
 // -----------------------------
-// -------- Visit Exprs --------
+// --------- Visitor -----------
 // -----------------------------
 
-func VisitExpr(exprs []Expr, isTry bool) (bool, *Error) {
+func (scope *Scope) VisitorVisit(node AST, IsTry bool) (bool, *Error) {
 	BreakValue := false
 	var err *Error
-	for _, expr := range exprs {
-		switch expr.Type {
-			case ExprPush:
-				err = OpPush(expr.AsPush.Arg)
-			case ExprPrint:
-				err = OpPrint()
-			case ExprInput:
-				OpInput()
-			case ExprPuts:
-				err = OpPuts()
-			case ExprPrintS:
-				OpPrintS()
-			case ExprPrintV:
-				OpPrintV()
-			case ExprAppend:
-				OpAppend(expr)
-			case ExprReplace:
-				OpReplace()
-			case ExprRemove:
-				OpRemove()
-			case ExprRead:
-				OpRead()
-			case ExprTypeOf:
-				err = OpTypeOf()
-			case ExprSwap:
-				err = OpSwap()
-			case ExprOver:
-				err = OpOver()
-			case ExprRot:
-				err = OpRot()
-			case ExprInc:
-				err = OpInc()
-			case ExprDec:
-				err = OpDec()
-			case ExprImport:
-				err = OpImport(expr)
-			case ExprDup:
-				err = OpDup()
-			case ExprDrop:
-				err = OpDrop()
-			case ExprLen:
-				err = OpLen()
-			case ExprExit:
-				os.Exit(0)
-			case ExprBinop:
-				err = OpBinop(expr.AsBiniop)
-			case ExprCompare:
-				err = OpCondition(expr)
-			case ExprBlockdef:
-				OpBlockdef(expr)
-			case ExprCall:
-				err = OpCallBlock(expr, isTry)
-			case ExprIf:
-				BreakValue, err = OpIf(expr, isTry)
-			case ExprFor:
-				err = OpFor(expr, isTry)
-			case ExprVardef:
-				OpVardef(expr)
-			case ExprBreak:
-				BreakValue = true
-			case ExprTry:
-				err = OpTry(expr)
+	for i := 0; i < len(node.(AsStatements)); i++ {
+		node := node.(AsStatements)[i]
+		switch node.(type) {
+			case AsPush:
+				err = scope.OpPush(node.(AsPush).value)
+			case AsId:
+				if node.(AsId).name == "print" {
+					err = scope.OpPrint()
+				} else if node.(AsId).name == "puts" {
+					err = scope.OpPuts()
+				} else if node.(AsId).name == "printS" {
+					scope.OpPrintS()
+				} else if node.(AsId).name == "break" {
+					BreakValue = true
+				} else if node.(AsId).name == "drop" {
+					err = scope.OpDrop()
+				} else if node.(AsId).name == "swap" {
+					err = scope.OpSwap()
+				} else if node.(AsId).name == "inc" {
+					err = scope.OpInc()
+				} else if node.(AsId).name == "dec" {
+					err = scope.OpDec()
+				} else if node.(AsId).name == "dup" {
+					err = scope.OpDup()
+				} else if node.(AsId).name == "append" {
+					err = scope.OpAppend()
+				} else if node.(AsId).name == "read" {
+					err = scope.OpRead()
+				} else if node.(AsId).name == "replace" {
+					err = scope.OpReplace()
+				} else if node.(AsId).name == "remove" {
+					err = scope.OpRemove()
+				} else if node.(AsId).name == "in" {
+					err = scope.OpIn()
+				} else if node.(AsId).name == "typeof" {
+					err = scope.OpTypeOf()
+				} else if node.(AsId).name == "rot" {
+					err = scope.OpRot()
+				} else if node.(AsId).name == "over" {
+					err = scope.OpOver()
+				} else {
+					panic("unreachable")
+				}
+			case AsBinop:
+				err = scope.OpBinop(node.(AsBinop).op)
+			case Vardef:
+				err = scope.OpVardef(node.(Vardef).Name)
+			case Blockdef:
+				err = scope.OpBlockdef(node)
+			case CallBlock:
+				err = scope.OpCallBlock(node.(CallBlock).Name)
+			case Import:
+				err = scope.OpImport(node.(Import).FileName)
+			case Compare:
+				err = scope.OpCompare(node.(Compare).op)
+			case AsStatements:
+				scope.VisitorVisit(node.(AsStatements), IsTry)
+			case If:
+				BreakValue, err = scope.OpIf(node.(If), IsTry)
+			case For:
+				err = scope.OpFor(node.(For), IsTry)
+			case Try:
+				err = scope.OpTry(node.(Try))
+			default:
+				fmt.Println("Error: unexpected node type.")
 		}
 		if err != nil {
-			if !isTry {
+			if !IsTry {
 				fmt.Println(err.message)
 				os.Exit(0)
 			}
@@ -1716,7 +1631,6 @@ func Usage() {
 	os.Exit(0)
 }
 
-
 func main() {
 	if len(os.Args) != 2 || os.Args[1] == "help" {
 		Usage()
@@ -1724,7 +1638,7 @@ func main() {
 
 	file, err := os.Open(os.Args[1])
 	if err != nil {
-		fmt.Println("Error: file '" + os.Args[1] + "' does not exist")
+		fmt.Println(fmt.Sprintf("Error: invalid file name `%s`.", os.Args[1]))
 
 		whilte := color.New(color.FgWhite)
 
@@ -1738,6 +1652,8 @@ func main() {
 
 	lexer := LexerInit(file)
 	parser := ParserInit(lexer)
-	exprs := ParserParse(parser)
-	VisitExpr(exprs, false)
+	ast := ParserParse(parser)
+	scope := InitScope()
+	scope.VisitorVisit(ast, false)
 }
+
