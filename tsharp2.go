@@ -637,7 +637,7 @@ func ParserParse(parser *Parser) AST {
 	for {
 		if parser.current_token_type == TOKEN_ID {
 			if parser.current_token_value == "print" || parser.current_token_value == "break" || parser.current_token_value == "append" || parser.current_token_value == "remove" || parser.current_token_value == "swap" || parser.current_token_value == "in" || parser.current_token_value == "typeof" ||
-			   parser.current_token_value == "drop"  || parser.current_token_value == "dup" || parser.current_token_value == "inc" || parser.current_token_value == "dec" || parser.current_token_value == "replace" || parser.current_token_value == "read" {
+			   parser.current_token_value == "drop"  || parser.current_token_value == "dup" || parser.current_token_value == "inc" || parser.current_token_value == "dec" || parser.current_token_value == "replace" || parser.current_token_value == "read" || parser.current_token_value == "puts" {
 				name := parser.current_token_value
 				IdExpr := AsId{name}
 				parser.ParserEat(TOKEN_ID)
@@ -1006,6 +1006,35 @@ func (scope *Scope) OpPrint() (*Error) {
 		case AsList:
 			PrintAsList(expr)
 			fmt.Println()
+	}
+	scope.OpDrop()
+	return nil
+}
+
+func (scope *Scope) OpPuts() (*Error) {
+	if len(scope.Stack) < 1 {
+		err := Error{}
+		err.message = "StackIndexError: `puts` the stack is empty."
+		err.Type = StackIndexError
+		return &err
+	}
+	expr := scope.Stack[len(scope.Stack)-1]
+	switch expr.(type) {
+		case AsStr: fmt.Print(expr.(AsStr).StringValue)
+		case AsInt: fmt.Print(expr.(AsInt).IntValue)
+		case AsBool: fmt.Print(expr.(AsBool).BoolValue)
+		case AsType: fmt.Print(fmt.Sprintf("<%s>" ,expr.(AsType).TypeValue))
+		case AsError:
+			switch expr.(AsError).err {
+				case NameError: fmt.Print("<error 'NameError'>")
+				case StackIndexError: fmt.Print("<error 'StackIndexError'>")
+				case ImportError: fmt.Print("<error 'ImportError'>")
+				case IndexError: fmt.Print("<error 'IndexError'>")
+				case TypeError: fmt.Print("<error 'TypeError'>")
+				default: fmt.Print(fmt.Sprintf("unexpected error <%d>", expr.(AsError).err))
+			}
+		case AsList:
+			PrintAsList(expr)
 	}
 	scope.OpDrop()
 	return nil
@@ -1431,6 +1460,8 @@ func (scope *Scope) VisitorVisit(node AST, IsTry bool) (bool, *Error) {
 			case AsId:
 				if node.(AsId).name == "print" {
 					err = scope.OpPrint()
+				} else if node.(AsId).name == "puts" {
+					err = scope.OpPuts()
 				} else if node.(AsId).name == "break" {
 					BreakValue = true
 				} else if node.(AsId).name == "drop" {
