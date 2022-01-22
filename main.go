@@ -991,9 +991,11 @@ func PrintAsList(node AST) {
 			case AsList:
 				PrintAsList(node.(AsList).ListArgs[i])
 		}
-		print(" ")
+		if i < len(node.(AsList).ListArgs)-1 {
+			print(", ")
+		}
 	}
-	print("}")
+	print(" }")
 }
 
 func (scope *Scope) OpPrint() (*Error) {
