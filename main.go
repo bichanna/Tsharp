@@ -1425,6 +1425,32 @@ func (scope *Scope) OpIn() (*Error) {
 	return nil
 }
 
+func (scope *Scope) OpLen() (*Error) {
+	if len(scope.Stack) < 1 {
+		err := Error{}
+		err.message = "StackIndexError: `len` expected one or more element in the stack."
+		err.Type = StackIndexError
+		return &err
+	}
+	visitedExpr := scope.Stack[len(scope.Stack)-1]
+	_, ok := visitedExpr.(AsList);
+	_, ok2 := visitedExpr.(AsStr);
+	if !ok && !ok2 {
+		err := Error{}
+		err.message = "TypeError: `len` expected <list> or <string> type element in the stack."
+		err.Type = TypeError
+		return &err
+	}
+	IntExpr := AsInt {}
+	if ok {
+		IntExpr.IntValue = len(visitedExpr.(AsList).ListArgs)
+	} else {
+		IntExpr.IntValue = len(visitedExpr.(AsStr).StringValue)
+	}
+	scope.OpPush(IntExpr)
+	return nil
+}
+
 func (scope *Scope) OpTypeOf() (*Error) {
 	if len(scope.Stack) < 1 {
 		err := Error{}
@@ -1574,6 +1600,8 @@ func (scope *Scope) VisitorVisit(node AST, IsTry bool) (bool, *Error) {
 					err = scope.OpRemove()
 				} else if node.(AsId).name == "in" {
 					err = scope.OpIn()
+				} else if node.(AsId).name == "len" {
+					err = scope.OpLen()
 				} else if node.(AsId).name == "typeof" {
 					err = scope.OpTypeOf()
 				} else if node.(AsId).name == "rot" {
