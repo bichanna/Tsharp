@@ -3,6 +3,7 @@
 ## Introduction
 
 T# is a Stack-based programming language designed for building software.
+
 It's like Forth but written in Go ʕ◔ϖ◔ʔ.
 
 ## Install & Run
@@ -218,14 +219,12 @@ end
 ```
 
 ## Error handling
+
+`StackIndexError`
+`TypeError`
+`ImportError`
+`NameError`
 ```python
-
-# errors
-# StackIndexError
-# TypeError
-# ImportError
-# NameError
-
 try 
     dup
 except StackIndexError do
