@@ -126,7 +126,7 @@ end
 call main
 ```
 
-`block` is like Function in other languages.
+`block` function in other languages.
 
 ## List
 ```python
