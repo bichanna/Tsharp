@@ -73,7 +73,7 @@ $ ./main.exe examples/main.tsp
 ```pascal
 "Hello World!" print
 ```
-'print' will print the top element of the stack, then remove it.
+`print` will print the top element of the stack, then remove it.
 
 ## Comments
 ```python
@@ -123,7 +123,7 @@ end
 call main
 ```
 
-'block' is like Function in other languages.
+`block` is like Function in other languages.
 
 ## List
 ```python
