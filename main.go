@@ -129,36 +129,38 @@ type Position struct {
 type Lexer struct {
 	pos Position
 	reader *bufio.Reader
+	FileName string
 }
 
-func LexerInit(reader io.Reader) *Lexer {
+func LexerInit(reader io.Reader, FileName string) *Lexer {
 	return &Lexer{
 		pos:    Position {line: 1, column: 0},
 		reader: bufio.NewReader(reader),
+		FileName: FileName,
 	}
 }
 
-func (lexer *Lexer) Lex() (Position, Token, string) {
+func (lexer *Lexer) Lex() (Position, Token, string, string) {
 	for {
 		r, _, err := lexer.reader.ReadRune()
 		if err != nil {
 			if err == io.EOF {
 				err = nil
-				return lexer.pos, TOKEN_EOF, "EOF"
+				return lexer.pos, TOKEN_EOF, "EOF", lexer.FileName
 			}
 			panic(err)
 		}
 		lexer.pos.column++
 		switch r {
 			case '\n': lexer.resetPosition()
-			case '+': return lexer.pos, TOKEN_PLUS, "+"
-			case '/': return lexer.pos, TOKEN_DIV, "/"
-			case '*': return lexer.pos, TOKEN_MUL, "*"
-			case '%': return lexer.pos, TOKEN_REM, "%"
-			case '{': return lexer.pos, TOKEN_L_BRACKET, "{"
-			case '}': return lexer.pos, TOKEN_R_BRACKET, "}"
-			case ',': return lexer.pos, TOKEN_COMMA, ","
-			case '.': return lexer.pos, TOKEN_DOT, "."
+			case '+': return lexer.pos, TOKEN_PLUS, "+", lexer.FileName
+			case '/': return lexer.pos, TOKEN_DIV, "/", lexer.FileName
+			case '*': return lexer.pos, TOKEN_MUL, "*", lexer.FileName
+			case '%': return lexer.pos, TOKEN_REM, "%", lexer.FileName
+			case '{': return lexer.pos, TOKEN_L_BRACKET, "{", lexer.FileName
+			case '}': return lexer.pos, TOKEN_R_BRACKET, "}", lexer.FileName
+			case ',': return lexer.pos, TOKEN_COMMA, ",", lexer.FileName
+			case '.': return lexer.pos, TOKEN_DOT, ".", lexer.FileName
 			default:
 				if unicode.IsSpace(r) {
 					continue
@@ -169,35 +171,35 @@ func (lexer *Lexer) Lex() (Position, Token, string) {
 					}
 					lexer.pos.column++
 					if r == '=' {
-						return lexer.pos, TOKEN_IS_EQUALS, "=="
+						return lexer.pos, TOKEN_IS_EQUALS, "==", lexer.FileName
 					}
 				} else if r == '-' {
 					r, _, err := lexer.reader.ReadRune()
 					if err != nil {
 						if err == io.EOF {
-							return lexer.pos, TOKEN_MINUS, "-"
+							return lexer.pos, TOKEN_MINUS, "-", lexer.FileName
 						}
 						panic(err)
 					}
 					lexer.pos.column++
 					if r == '>' {
-						return lexer.pos, TOKEN_EQUALS, "->"
+						return lexer.pos, TOKEN_EQUALS, "->", lexer.FileName
 					} else {
-						return lexer.pos, TOKEN_MINUS, "-"
+						return lexer.pos, TOKEN_MINUS, "-", lexer.FileName
 					}
 				} else if r == '<' {
 					r, _, err := lexer.reader.ReadRune()
 					if err != nil {
 						if err == io.EOF {
-							return lexer.pos, TOKEN_LESS_THAN, "<"
+							return lexer.pos, TOKEN_LESS_THAN, "<", lexer.FileName
 						}
 						panic(err)
 					}
 					if r == '=' {
 						lexer.pos.column++
-						return lexer.pos, TOKEN_LESS_EQUALS, "<="
+						return lexer.pos, TOKEN_LESS_EQUALS, "<=", lexer.FileName
 					} else {
-						return lexer.pos, TOKEN_LESS_THAN, "<"
+						return lexer.pos, TOKEN_LESS_THAN, "<", lexer.FileName
 					}
 				} else if r == '|' {
 					r, _, err := lexer.reader.ReadRune()
@@ -213,7 +215,7 @@ func (lexer *Lexer) Lex() (Position, Token, string) {
 					}
 					if r == '|' {
 						lexer.pos.column++
-						return lexer.pos, TOKEN_OR, "||"
+						return lexer.pos, TOKEN_OR, "||", lexer.FileName
 					} else {
 						fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`.", lexer.pos.line, lexer.pos.column, string(r)))
 						os.Exit(0)
@@ -232,7 +234,7 @@ func (lexer *Lexer) Lex() (Position, Token, string) {
 					}
 					if r == '&' {
 						lexer.pos.column++
-						return lexer.pos, TOKEN_AND, "&&"
+						return lexer.pos, TOKEN_AND, "&&", lexer.FileName
 					} else {
 						fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`.", lexer.pos.line, lexer.pos.column, string(r)))
 						os.Exit(0)
@@ -241,22 +243,22 @@ func (lexer *Lexer) Lex() (Position, Token, string) {
 					r, _, err := lexer.reader.ReadRune()
 					if err != nil {
 						if err == io.EOF {
-							return lexer.pos, TOKEN_GREATER_THAN, ">"
+							return lexer.pos, TOKEN_GREATER_THAN, ">", lexer.FileName
 						}
 						panic(err)
 					}
 					if r == '=' {
 						lexer.pos.column++
-						return lexer.pos, TOKEN_GREATER_EQUALS, ">="
+						return lexer.pos, TOKEN_GREATER_EQUALS, ">=", lexer.FileName
 					} else {
-						return lexer.pos, TOKEN_GREATER_THAN, ">"
+						return lexer.pos, TOKEN_GREATER_THAN, ">", lexer.FileName
 					}
 				} else if r == '!' {
 					r, _, err := lexer.reader.ReadRune()
 					if err != nil {panic(err)}
 					lexer.pos.column++
 					if r == '=' {
-						return lexer.pos, TOKEN_NOT_EQUALS, "!="
+						return lexer.pos, TOKEN_NOT_EQUALS, "!=", lexer.FileName
 					}
 				} else if r == '#' {
 					for {
@@ -264,7 +266,7 @@ func (lexer *Lexer) Lex() (Position, Token, string) {
 						if err != nil {
 							if err == io.EOF {
 								err = nil
-								return lexer.pos, TOKEN_EOF, "EOF"
+								return lexer.pos, TOKEN_EOF, "EOF", lexer.FileName
 							}
 							panic(err)
 						}
@@ -277,29 +279,29 @@ func (lexer *Lexer) Lex() (Position, Token, string) {
 					startPos := lexer.pos
 					lexer.backup()
 					val := lexer.lexInt()
-					return startPos, TOKEN_INT, val
+					return startPos, TOKEN_INT, val, lexer.FileName
 				} else if unicode.IsLetter(r) {
 					startPos := lexer.pos
 					lexer.backup()
 					val := lexer.lexId()
 					if val == "end" {
-						return startPos, TOKEN_END, val
+						return startPos, TOKEN_END, val, lexer.FileName
 					} else if val == "do" {
-						return startPos, TOKEN_DO, val
+						return startPos, TOKEN_DO, val, lexer.FileName
 					} else if val == "true" || val == "false" {
-						return startPos, TOKEN_BOOL, val
+						return startPos, TOKEN_BOOL, val, lexer.FileName
 					} else if val == "string" || val == "int" || val == "bool" || val == "type" || val == "list" || val == "error" {
-						return startPos, TOKEN_TYPE, val
+						return startPos, TOKEN_TYPE, val, lexer.FileName
 					} else if val == "else" {
-						return startPos, TOKEN_ELSE, val
+						return startPos, TOKEN_ELSE, val, lexer.FileName
 					} else if val == "elif" {
-						return startPos, TOKEN_ELIF, val
+						return startPos, TOKEN_ELIF, val, lexer.FileName
 					} else if val == "NameError" || val == "StackIndexError" || val == "TypeError" || val == "ImportError" || val == "IndexError" || val == "AssertionError" {
-						return startPos, TOKEN_ERROR, val
+						return startPos, TOKEN_ERROR, val, lexer.FileName
 					} else if val == "except" {
-						return startPos, TOKEN_EXCEPT, val
+						return startPos, TOKEN_EXCEPT, val, lexer.FileName
 					}
-					return startPos, TOKEN_ID, val
+					return startPos, TOKEN_ID, val, lexer.FileName
 				} else if r == '"' {
 					startPos := lexer.pos
 					lexer.backup()
@@ -307,7 +309,7 @@ func (lexer *Lexer) Lex() (Position, Token, string) {
 					val := lexer.lexString()
 					lexer.pos.column++
 					r, _, err = lexer.reader.ReadRune()
-					return startPos, TOKEN_STRING, val
+					return startPos, TOKEN_STRING, val, lexer.FileName
 				} else if string(r) == "'" {
 					startPos := lexer.pos
 					lexer.backup()
@@ -315,16 +317,16 @@ func (lexer *Lexer) Lex() (Position, Token, string) {
 					val := lexer.lexStringSingle()
 					lexer.pos.column++
 					r, _, err = lexer.reader.ReadRune()
-					return startPos, TOKEN_STRING, val
+					return startPos, TOKEN_STRING, val, lexer.FileName
 				} else {
 					line := lexer.pos.line
 					col := lexer.pos.column
-					file, err := os.Open("main.tsp")
+					file, err := os.Open(lexer.FileName)
 					if err != nil {
 						panic(err)
 					}
-					lexer := LexerInit(file)
-					fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`.", lexer.pos.line, lexer.pos.column, string(r)))
+					lexer := LexerInit(file, lexer.FileName)
+					fmt.Println(fmt.Sprintf("%s SyntaxError:%d:%d: unexpected token value `%s`.", lexer.FileName, lexer.pos.line, lexer.pos.column, string(r)))
 					lexer.PrintErrorLineAsString(line, col)
 					os.Exit(0)
 				}
@@ -602,6 +604,7 @@ type AST interface {
 type Parser struct {
 	current_token_type Token
 	current_token_value string
+	FileName string
 	lexer Lexer
 	line int
 	column int
@@ -609,10 +612,11 @@ type Parser struct {
 
 
 func ParserInit(lexer *Lexer) *Parser {
-	pos, tok, val := lexer.Lex()
+	pos, tok, val, file := lexer.Lex()
 	return &Parser{
 		current_token_type: tok,
 		current_token_value: val,
+		FileName: file,
 		lexer: *lexer,
 		line: pos.line,
 		column: pos.column,
@@ -621,12 +625,21 @@ func ParserInit(lexer *Lexer) *Parser {
 
 func (parser *Parser) ParserEat(token Token) {
 	if token != parser.current_token_type {
-		fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`.", parser.line, parser.column, parser.current_token_value))
+		line := parser.line
+		col := parser.column
+		file, err := os.Open(parser.FileName)
+		if err != nil {
+			panic(err)
+		}
+		lexer := LexerInit(file, parser.FileName)
+		fmt.Println(fmt.Sprintf("%s SyntaxError:%d:%d: unexpected token value `%s`.", parser.FileName, parser.line, parser.column, parser.current_token_value))
+		lexer.PrintErrorLineAsString(line, col)
 		os.Exit(0)
 	}
-	pos, tok, val := parser.lexer.Lex()
+	pos, tok, val, file := parser.lexer.Lex()
 	parser.current_token_type = tok
 	parser.current_token_value = val
+	parser.FileName = file
 	parser.line = pos.line
 	parser.column = pos.column
 }
@@ -703,7 +716,15 @@ func ParserParseExpr(parser *Parser) AST {
 			}
 			parser.ParserEat(TOKEN_TYPE)
 		default:
-			fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`.", parser.line, parser.column, parser.current_token_value))
+			line := parser.line
+			col := parser.column
+			file, err := os.Open(parser.FileName)
+			if err != nil {
+				panic(err)
+			}
+			lexer := LexerInit(file, parser.FileName)
+			fmt.Println(fmt.Sprintf("%s SyntaxError:%d:%d: unexpected token value `%s`.", parser.FileName, parser.line, parser.column, parser.current_token_value))
+			lexer.PrintErrorLineAsString(line, col)
 			os.Exit(0)
 	}
 
@@ -713,7 +734,15 @@ func ParserParseExpr(parser *Parser) AST {
 func ParserParse(parser *Parser) AST {
 	var Statements AsStatements
 	if  parser.current_token_type == TOKEN_DO || parser.current_token_type == TOKEN_END || parser.current_token_type == TOKEN_ELIF || parser.current_token_type == TOKEN_ELSE || parser.current_token_type == TOKEN_EXCEPT {
-		fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: the body is empty, unexpected token value `%s`.", parser.line, parser.column, parser.current_token_value))
+		line := parser.line
+		col := parser.column
+		file, err := os.Open(parser.FileName)
+		if err != nil {
+			panic(err)
+		}
+		lexer := LexerInit(file, parser.FileName)
+		fmt.Println(fmt.Sprintf("%s SyntaxError:%d:%d: the body is empty, unexpected token value `%s`.", parser.FileName, parser.line, parser.column, parser.current_token_value))
+		lexer.PrintErrorLineAsString(line, col)
 		os.Exit(0)
 	}
 	for {
@@ -869,7 +898,15 @@ func ParserParse(parser *Parser) AST {
 			parser.current_token_type == TOKEN_ELSE || parser.current_token_type == TOKEN_EXCEPT || parser.current_token_type == TOKEN_R_BRACKET {
 			break
 		} else {
-			fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`.", parser.line, parser.column, parser.current_token_value))
+			line := parser.line
+			col := parser.column
+			file, err := os.Open(parser.FileName)
+			if err != nil {
+				panic(err)
+			}
+			lexer := LexerInit(file, parser.FileName)
+			fmt.Println(fmt.Sprintf("%s SyntaxError:%d:%d: unexpected token value `%s`.", parser.FileName, parser.line, parser.column, parser.current_token_value))
+			lexer.PrintErrorLineAsString(line, col)
 			os.Exit(0)
 		}
 	}
@@ -1643,7 +1680,7 @@ func (scope *Scope) OpImport(FileName string) (*Error) {
 	if err != nil {
 		panic(err)
 	}
-	lexer := LexerInit(file)
+	lexer := LexerInit(file, FileName)
 	parser := ParserInit(lexer)
 	ast := ParserParse(parser)
 	scope.VisitorVisit(ast, false)
@@ -1797,7 +1834,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	lexer := LexerInit(file)
+	lexer := LexerInit(file, os.Args[1])
 	parser := ParserInit(lexer)
 	ast := ParserParse(parser)
 	scope := InitScope()
