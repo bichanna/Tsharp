@@ -347,7 +347,7 @@ print
 ```
 
 ### Bubble Sort
-```pascal
+```factor
 { 19 13 6 2 18 8 1 4 11 9 100 30 4 } -> arr arr print
 
 arr len -> length
