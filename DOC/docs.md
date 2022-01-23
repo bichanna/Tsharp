@@ -53,7 +53,9 @@ $ ./main.exe examples/main.tsp
 * [Swap](#swap)
 * [Inc](#inc)
 * [Dec](#dec)
-* [printS](#prints)
+* [Input](#input)
+* [Exit](#exit)
+* [PrintS](#prints)
 
 </td><td valign=top>
 
@@ -268,18 +270,6 @@ import "main.tsp"
 ```
 'over' copy the element below the top of the stack. ( a b -- a b a )
 
-## PrintS
-```python
-1 2 "Hello World!"
-
-printS
-
-# stack length  
-#     ↓ 
-#    <3>  1 2 'Hello World' <- top
-```
-'printS' print all stack values. 'printS' won't drop stack value after print.
-
 ## Inc
 ```python
 1 inc print
@@ -292,6 +282,11 @@ printS
 ```
 'dec' decrement the top element of the stack
 
+## input
+```python
+input print
+```
+
 ## Exit
 ```python
 "Hello World"
@@ -299,6 +294,18 @@ exit
 print
 ```
 'exit' will exit the program.
+
+## PrintS
+```python
+1 2 "Hello World!"
+
+printS
+
+# stack length  
+#     ↓ 
+#    <3>  1 2 'Hello World' <- top
+```
+'printS' print all stack values. 'printS' won't drop stack value after print.
 
 ## Examples
 ### FizzBuzz
