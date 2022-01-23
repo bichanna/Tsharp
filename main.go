@@ -1684,7 +1684,7 @@ func (scope *Scope) VisitorVisit(node AST, IsTry bool) (bool, *Error) {
 			case Try:
 				err = scope.OpTry(node.(Try))
 			case Assert:
-				scope.OpAssert(node)
+				err = scope.OpAssert(node)
 			default:
 				fmt.Println("Error: unexpected node type.")
 		}
