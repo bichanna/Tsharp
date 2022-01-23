@@ -3,7 +3,7 @@
 ## Introduction
 
 T# is a Stack-based programming language designed for building software.
-It's like Porth, Forth.
+It's like Forth but written in Go ʕ◔ϖ◔ʔ.
 
 ## Install & Run
 ```bash
@@ -102,6 +102,7 @@ type # int string bool type
 ```python
 "Hello World" typeof print
 ```
+`typeof` push the type of the top element of the stack. The element that `typeof` used will be dropped.
 
 ## Arithmetic
 ```pascal
