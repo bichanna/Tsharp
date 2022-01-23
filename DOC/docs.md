@@ -21,9 +21,13 @@ $ ./main.exe examples/main.tsp
 
 * [Hello World](#hello-world)
 * [Comments](#comments)
-* [Block](#block)
 * [Variables](#variables)
+
+* [Data types](#data-types)
+    * [Typeof](#typeof)
+
 * [Arithmetic](#arithmetic)
+* [Block](#block)
 
 * [List](#list)
     * [Append](#append)
@@ -70,12 +74,7 @@ $ ./main.exe examples/main.tsp
 
 ## Comments
 ```python
-# Sample comment
-```
-
-## Import
-```python
-import "main.tsp"
+# comment...
 ```
 
 ## Variables
@@ -85,6 +84,31 @@ import "main.tsp"
 x -> y
 
 y print
+```
+
+## Data types
+```python
+int # 12345
+string # "Hello World!"
+bool # true false
+list # { 1 2 3 4 5 }
+type # int string bool type
+```
+
+### Typeof
+```python
+"Hello World" typeof print
+```
+
+## Arithmetic
+```pascal
+34 35 + print
+
+100 40 - print
+
+200 5 / print
+
+10 2 * print
 ```
 
 ## Block
@@ -97,6 +121,31 @@ call main
 ```
 
 'block' is like Function in other languages.
+
+## List
+```python
+{ 1 2 3 4 5 6 7 8 9 10 } print
+```
+### Append
+```python
+{ 1 2 3 4 5 6 7 8 9 10 } 11 append
+```
+### Read
+```python
+{ 1 2 3 4 5 6 7 8 9 10 } 0 read print
+```
+### Replace
+```python
+{ 1 2 3 4 5 6 7 8 9 10 } "Hello World!" 0 replace print
+```
+### Remove
+```python
+{ 1 2 3 4 5 6 7 8 9 10 } 0 remove print
+```
+### Len
+```python
+{ 1 2 3 4 5 6 7 8 9 10 } len print
+```
 
 ## If Statement
 ```pascal
@@ -144,6 +193,51 @@ if N { 20 30 11 42 28 91 } in do
 end
 ```
 
+## For loop
+
+### Loop 100 times
+```pascal
+0 for dup 100 <=  do
+    dup print
+    inc
+end
+```
+
+### Break
+```pascal
+0 for dup 100 <= do
+    dup print
+    if dup 10 == do
+        break
+    end
+end
+```
+
+## Error handling
+```python
+
+# errors
+# StackIndexError
+# TypeError
+# ImportError
+# NameError
+
+try 
+    dup
+except StackIndexError do
+    "Error..." print
+except IndexError do
+    "Error..." print
+except NameError do
+    "Error..." print
+end
+```
+
+## Import
+```python
+import "main.tsp"
+```
+
 ## Dup
 ```pascal
 "Hello World" dup print print
@@ -186,77 +280,6 @@ printS
 ```
 'printS' print all stack values. 'printS' won't drop stack value after print.
 
-
-## For loop
-
-### Loop 100 times
-```pascal
-0 for dup 100 <=  do
-    dup print
-    inc
-end
-```
-
-### Break
-```pascal
-0 for dup 100 <= do
-    dup print
-    if dup 10 == do
-        break
-    end
-end
-```
-
-## Error handling
-```python
-
-# errors
-# StackIndexError
-# TypeError
-# ImportError
-# NameError
-
-try 
-    dup
-except StackIndexError do
-    "Error..." print
-except IndexError do
-    "Error..." print
-except NameError do
-    "Error..." print
-end
-```
-
-## Arithmetic
-```pascal
-34 35 + print
-
-100 40 - print
-
-200 5 / print
-
-10 2 * print
-```
-
-## Type
-```python
-int # 12345
-string # "Hello World!"
-bool # true false
-list # { 1 2 3 4 5 }
-type # int string bool type
-```
-
-## Typeof
-```python
-"Hello World" dup typeof print
-```
-
-## append string
-```python
-"Hello " "World!" + print 
-```
-
 ## Inc
 ```python
 1 inc print
@@ -276,31 +299,6 @@ exit
 print
 ```
 'exit' will exit the program.
-
-## List
-```python
-{ 1 2 3 4 5 6 7 8 9 10 } print
-```
-### Append
-```python
-{ 1 2 3 4 5 6 7 8 9 10 } 11 append
-```
-### Read
-```python
-{ 1 2 3 4 5 6 7 8 9 10 } 0 read print
-```
-### Replace
-```python
-{ 1 2 3 4 5 6 7 8 9 10 } "Hello World!" 0 replace print
-```
-### Remove
-```python
-{ 1 2 3 4 5 6 7 8 9 10 } 0 remove print
-```
-### Len
-```python
-{ 1 2 3 4 5 6 7 8 9 10 } len print
-```
 
 ## Examples
 ### FizzBuzz
