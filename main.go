@@ -747,7 +747,7 @@ func ParserParse(parser *Parser) AST {
 	}
 	for {
 		if parser.current_token_type == TOKEN_ID {
-			if parser.current_token_value == "print" || parser.current_token_value == "break" || parser.current_token_value == "append" || parser.current_token_value == "remove" || parser.current_token_value == "swap" || parser.current_token_value == "in" || parser.current_token_value == "typeof" || parser.current_token_value == "rot" || parser.current_token_value == "len" ||
+			if parser.current_token_value == "print" || parser.current_token_value == "break" || parser.current_token_value == "append" || parser.current_token_value == "remove" || parser.current_token_value == "swap" || parser.current_token_value == "in" || parser.current_token_value == "typeof" || parser.current_token_value == "rot" || parser.current_token_value == "len" || parser.current_token_value == "input" ||
 			   parser.current_token_value == "drop"  || parser.current_token_value == "dup" || parser.current_token_value == "inc" || parser.current_token_value == "dec" || parser.current_token_value == "replace" || parser.current_token_value == "read" || parser.current_token_value == "puts" || parser.current_token_value == "over" || parser.current_token_value == "printS" || parser.current_token_value == "exit" {
 				name := parser.current_token_value
 				IdExpr := AsId{name}
@@ -1711,6 +1711,17 @@ func (scope *Scope) OpAssert(node AST) (*Error) {
 	return nil
 }
 
+func (scope *Scope) OpInput() {
+	inputReader := bufio.NewReader(os.Stdin)
+	input, _ := inputReader.ReadString('\n')
+	input = input[:len(input)-1]
+	
+	StrExpr := AsStr {
+		input,
+	}
+	scope.OpPush(StrExpr)
+}
+
 // -----------------------------
 // --------- Visitor -----------
 // -----------------------------
@@ -1762,6 +1773,8 @@ func (scope *Scope) VisitorVisit(node AST, IsTry bool) (bool, *Error) {
 					err = scope.OpOver()
 				} else if node.(AsId).name == "exit" {
 					os.Exit(0)
+				} else if node.(AsId).name == "input" {
+					scope.OpInput()
 				} else {
 					panic("unreachable")
 				}
