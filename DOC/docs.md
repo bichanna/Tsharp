@@ -226,6 +226,7 @@ end
 `ImportError`
 `NameError`
 `AssertionError`
+`IndexError`
 ```python
 try 
     dup
