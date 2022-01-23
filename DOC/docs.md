@@ -46,7 +46,7 @@ $ ./main.exe examples/main.tsp
 
 </td><td width=33% valign=top>
 
-* [Words](words)
+* [Built-in Words](#built-in-words)
     * [Dup](#dup)
     * [Drop](#drop)
     * [Over](#over)
@@ -241,7 +241,8 @@ end
 import "main.tsp"
 ```
 
-## Words
+## Built-in Words
+
 ### Dup
 ```pascal
 "Hello World" dup print print
