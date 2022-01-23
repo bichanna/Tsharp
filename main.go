@@ -241,7 +241,7 @@ func (lexer *Lexer) Lex() (Position, Token, string) {
 						return startPos, TOKEN_ELSE, val
 					} else if val == "elif" {
 						return startPos, TOKEN_ELIF, val
-					} else if val == "NameError" || val == "StackIndexError" || val == "TypeError" || val == "ImportError" || val == "IndexError" {
+					} else if val == "NameError" || val == "StackIndexError" || val == "TypeError" || val == "ImportError" || val == "IndexError" || val == "AssertionError" {
 						return startPos, TOKEN_ERROR, val
 					} else if val == "except" {
 						return startPos, TOKEN_EXCEPT, val
@@ -379,6 +379,7 @@ const (
 	TypeError
 	IndexError
 	ImportError
+	AssertionError
 )
 
 type Error struct {
@@ -432,6 +433,14 @@ type Import struct {
 }
 
 func (node Import) node() {}
+
+type Assert struct {
+	Line int
+	Col int
+	Message string
+}
+
+func (node Assert) node() {}
 
 type Compare struct {
 	op uint8
@@ -577,6 +586,8 @@ func ParserParseError(parser *Parser) AST {
 		err = TypeError
 	} else if parser.current_token_value == "IndexError" {
 		err = IndexError
+	} else if parser.current_token_value == "AssertionError" {
+		err = AssertionError
 	}
 	parser.ParserEat(TOKEN_ERROR)
 	ErrorExpr := AsError {
@@ -648,6 +659,17 @@ func ParserParse(parser *Parser) AST {
 				IdExpr := AsId{name}
 				parser.ParserEat(TOKEN_ID)
 				Statements = append(Statements, IdExpr)
+			} else if parser.current_token_value == "assert" {
+				Line := parser.line
+				Col := parser.column
+				parser.ParserEat(TOKEN_ID)
+				AssertExpr := Assert {
+					Line: Line,
+					Col: Col,
+					Message: parser.current_token_value,
+				}
+				parser.ParserEat(TOKEN_STRING)
+				Statements = append(Statements, AssertExpr)
 			} else if parser.current_token_value == "block" {
 				parser.ParserEat(TOKEN_ID)
 				name := parser.current_token_value
@@ -1563,6 +1585,30 @@ func (scope *Scope) OpImport(FileName string) (*Error) {
 	return nil
 }
 
+func (scope *Scope) OpAssert(node AST) (*Error) {
+	if len(scope.Stack) < 1 {
+		err := Error{}
+		err.message = "StackIndexError: `assert` expected one or more <bool> type element in the stack."
+		err.Type = StackIndexError
+		return &err
+	}
+	BoolValue := scope.Stack[len(scope.Stack)-1]
+	if _, ok := BoolValue.(AsBool); !ok {
+		err := Error{}
+		err.message = "TypeError: `assert` expected <bool> type element in the stack."
+		err.Type = TypeError
+		return &err
+	}
+	scope.OpDrop()
+	if !BoolValue.(AsBool).BoolValue {
+		err := Error{}
+		err.message = fmt.Sprintf("AssertionError:%d:%d: %s", node.(Assert).Line, node.(Assert).Col, node.(Assert).Message)
+		err.Type = AssertionError
+		return &err
+	}
+	return nil
+}
+
 // -----------------------------
 // --------- Visitor -----------
 // -----------------------------
@@ -1637,6 +1683,8 @@ func (scope *Scope) VisitorVisit(node AST, IsTry bool) (bool, *Error) {
 				err = scope.OpFor(node.(For), IsTry)
 			case Try:
 				err = scope.OpTry(node.(Try))
+			case Assert:
+				scope.OpAssert(node)
 			default:
 				fmt.Println("Error: unexpected node type.")
 		}
