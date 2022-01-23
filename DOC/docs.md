@@ -46,7 +46,7 @@ $ ./main.exe examples/main.tsp
 
 </td><td width=33% valign=top>
 
-* [Built-in Words](built-in-words)
+* [Built-in Words](built--in-words)
     * [Dup](#dup)
     * [Drop](#drop)
     * [Over](#over)
