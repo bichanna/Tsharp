@@ -1,27 +1,29 @@
 <div align="center">    
     <img width="100px" src="https://user-images.githubusercontent.com/81926489/143374038-059715ef-a83d-479d-a8c3-56ea57b8cc8e.PNG">
     <h1> The T# Programming Language</h1>
-    <a href="https://github.com/Tsharp-lang/Tsharp/blob/main/DOC/docs.md">Doc</a>
-    |
-    <a href="https://github.com/Tsharp-lang/Tsharp/blob/main/DOC/ドキュメント.md">Doc(日本語)</a>
-    |
-    <a href="https://github.com/Tsharp-lang/Tsharp/blob/main/editor/tsharp.vim">Vim</a>
-    |
-    <a href="https://marketplace.visualstudio.com/items?itemName=akamurasaki.tsharplanguage-color">VSCode</a>
+
+
+[Docs](https://github.com/Tsharp-lang/Tsharp/blob/main/DOC/docs.md) |
+[Docs(日本語)](https://github.com/Tsharp-lang/Tsharp/blob/main/DOC/ドキュメント.md) |
+[Vim](https://github.com/Tsharp-lang/Tsharp/blob/main/editor/tsharp.vim) | 
+[VSCode](https://marketplace.visualstudio.com/items?itemName=akamurasaki.tsharplanguage-color)
 </div>
+
+<div align="center"> 
 
 [![Ubuntu](https://github.com/Tsharp-lang/Tsharp/actions/workflows/tsharp-ci-ubuntu.yml/badge.svg)](https://github.com/Tsharp-lang/Tsharp/actions/workflows/tsharp-ci-ubuntu.yml)
 [![Windows](https://github.com/Tsharp-lang/Tsharp/actions/workflows/tsharp-ci-windows.yml/badge.svg)](https://github.com/Tsharp-lang/Tsharp/actions/workflows/tsharp-ci-windows.yml)
 [![CodeQL](https://github.com/Tsharp-lang/Tsharp/actions/workflows/codeql-analysis.yml/badge.svg?branch=main)](https://github.com/Tsharp-lang/Tsharp/actions/workflows/codeql-analysis.yml)
 
+</div>
 WARNING! THIS LANGUAGE IS A WORK IN PROGRESS! ANYTHING CAN CHANGE AT ANY MOMENT WITHOUT ANY NOTICE!
-
-It's like Forth and Porth, but written in Go.
+<br><br>
+It's like Forth and Porth, but written in Go ʕ◔ϖ◔ʔ.
 <a href="https://en.wikipedia.org/wiki/Stack-oriented_programming">Stack-oriented programming</a>
 
 ### TODO
 - [ ] Compile to C
-- [ ] Self-hosted
+- [ ] Self-hosted (<a href="https://github.com/Tsharp-lang/TsharpTsharp">T# written in T#</a>)
 
 ### Install
 

@@ -3,7 +3,8 @@
 ## Introduction
 
 T# is a Stack-based programming language designed for building software.
-It's like Porth, Forth.
+
+It's like Forth but written in Go ʕ◔ϖ◔ʔ.
 
 ## Install & Run
 ```bash
@@ -21,9 +22,13 @@ $ ./main.exe examples/main.tsp
 
 * [Hello World](#hello-world)
 * [Comments](#comments)
-* [Block](#block)
 * [Variables](#variables)
+
+* [Data types](#data-types)
+    * [Typeof](#typeof)
+
 * [Arithmetic](#arithmetic)
+* [Block](#block)
 
 * [List](#list)
     * [Append](#append)
@@ -42,14 +47,17 @@ $ ./main.exe examples/main.tsp
 
 </td><td width=33% valign=top>
 
-* [Dup](#dup)
-* [Drop](#drop)
-* [Over](#over)
-* [Rot](#rot)
-* [Swap](#swap)
-* [Inc](#inc)
-* [Dec](#dec)
-* [printS](#prints)
+* [Built-in Words](#built-in-words)
+    * [Dup](#dup)
+    * [Drop](#drop)
+    * [Over](#over)
+    * [Rot](#rot)
+    * [Swap](#swap)
+    * [Inc](#inc)
+    * [Dec](#dec)
+    * [Input](#input)
+    * [Exit](#exit)
+    * [PrintS](#prints)
 
 </td><td valign=top>
 
@@ -66,16 +74,11 @@ $ ./main.exe examples/main.tsp
 ```pascal
 "Hello World!" print
 ```
-'print' will print the top element of the stack, then remove it.
+`print` will print the top element of the stack, then remove it.
 
 ## Comments
 ```python
-# Sample comment
-```
-
-## Import
-```python
-import "main.tsp"
+# comment...
 ```
 
 ## Variables
@@ -87,6 +90,32 @@ x -> y
 y print
 ```
 
+## Data types
+```python
+int # 12345
+string # "Hello World!"
+bool # true false
+list # { 1 2 3 4 5 }
+type # int string bool type
+```
+
+### Typeof
+```python
+"Hello World" typeof print
+```
+`typeof` push the type of the top element of the stack. The element that `typeof` used will be dropped.
+
+## Arithmetic
+```pascal
+34 35 + print
+
+100 40 - print
+
+200 5 / print
+
+10 2 * print
+```
+
 ## Block
 ```pascal
 block main do
@@ -96,7 +125,32 @@ end
 call main
 ```
 
-'block' is like Function in other languages.
+`block` is like Function in other languages.
+
+## List
+```python
+{ 1 2 3 4 5 6 7 8 9 10 } print
+```
+### Append
+```python
+{ 1 2 3 4 5 6 7 8 9 10 } 11 append
+```
+### Read
+```python
+{ 1 2 3 4 5 6 7 8 9 10 } 0 read print
+```
+### Replace
+```python
+{ 1 2 3 4 5 6 7 8 9 10 } "Hello World!" 0 replace print
+```
+### Remove
+```python
+{ 1 2 3 4 5 6 7 8 9 10 } 0 remove print
+```
+### Len
+```python
+{ 1 2 3 4 5 6 7 8 9 10 } len print
+```
 
 ## If Statement
 ```pascal
@@ -144,49 +198,6 @@ if N { 20 30 11 42 28 91 } in do
 end
 ```
 
-## Dup
-```pascal
-"Hello World" dup print print
-```
-'dup' duplicate element on top of the stack. ( a -- a a )
-
-## Drop
-```pascal
-"Hello World" "T# Programming Language" drop print
-```
-'drop' drops the top element of the stack. ( a --  )
-
-## Rot
-```python
-1 2 3 rot print print print
-```
-'rot' rotate top three stack elements. ( a b c -- b c a )
-
-## Swap
-```pascal
-1 2 swap print print
-```
-'swap' swaps two values in stack. ( a b -- b a )
-
-## Over
-```python
-1 2 over print print print
-```
-'over' copy the element below the top of the stack. ( a b -- a b a )
-
-## PrintS
-```python
-1 2 "Hello World!"
-
-printS
-
-# stack length  
-#     ↓ 
-#    <3>  1 2 'Hello World' <- top
-```
-'printS' print all stack values. 'printS' won't drop stack value after print.
-
-
 ## For loop
 
 ### Loop 100 times
@@ -208,14 +219,12 @@ end
 ```
 
 ## Error handling
+
+`StackIndexError`
+`TypeError`
+`ImportError`
+`NameError`
 ```python
-
-# errors
-# StackIndexError
-# TypeError
-# ImportError
-# NameError
-
 try 
     dup
 except StackIndexError do
@@ -227,80 +236,79 @@ except NameError do
 end
 ```
 
-## Arithmetic
+## Import
+```python
+import "main.tsp"
+```
+
+## Built-in Words
+
+### Dup
 ```pascal
-34 35 + print
-
-100 40 - print
-
-200 5 / print
-
-10 2 * print
+"Hello World" dup print print
 ```
+`dup` duplicate element on top of the stack. ( a -- a a )
 
-## Type
+### Drop
+```pascal
+"Hello World" "T# Programming Language" drop print
+```
+`drop` drops the top element of the stack. ( a --  )
+
+### Rot
 ```python
-int # 12345
-string # "Hello World!"
-bool # true false
-list # { 1 2 3 4 5 }
-type # int string bool type
+1 2 3 rot print print print
 ```
+`rot` rotate top three stack elements. ( a b c -- b c a )
 
-## Typeof
+### Swap
+```pascal
+1 2 swap print print
+```
+`swap` swaps two values in stack. ( a b -- b a )
+
+### Over
 ```python
-"Hello World" dup typeof print
+1 2 over print print print
 ```
+`over` copy the element below the top of the stack. ( a b -- a b a )
 
-## append string
-```python
-"Hello " "World!" + print 
-```
-
-## Inc
+### Inc
 ```python
 1 inc print
 ```
-'inc' increment the top element of the stack
+`inc` increment the top element of the stack
 
-## Dec
+### Dec
 ```python
 10 dec print
 ```
-'dec' decrement the top element of the stack
+`dec` decrement the top element of the stack
 
-## Exit
+### input
+```python
+input print
+```
+
+### Exit
 ```python
 "Hello World"
 exit
 print
 ```
-'exit' will exit the program.
+`exit` will exit the program.
 
-## List
+### PrintS
 ```python
-{ 1 2 3 4 5 6 7 8 9 10 } print
+1 2 "Hello World!"
+
+printS
+
+# stack length  
+#     ↓ 
+#    <3>  1 2 'Hello World' <- top
 ```
-### Append
-```python
-{ 1 2 3 4 5 6 7 8 9 10 } 11 append
-```
-### Read
-```python
-{ 1 2 3 4 5 6 7 8 9 10 } 0 read print
-```
-### Replace
-```python
-{ 1 2 3 4 5 6 7 8 9 10 } "Hello World!" 0 replace print
-```
-### Remove
-```python
-{ 1 2 3 4 5 6 7 8 9 10 } 0 remove print
-```
-### Len
-```python
-{ 1 2 3 4 5 6 7 8 9 10 } len print
-```
+`printS` print all stack values. 'printS' won't drop stack value after print.
 
 ## Examples
 ### FizzBuzz
@@ -338,7 +346,7 @@ print
 ```
 
 ### Bubble Sort
-```pascal
+```factor
 { 19 13 6 2 18 8 1 4 11 9 100 30 4 } -> arr arr print
 
 arr len -> length
