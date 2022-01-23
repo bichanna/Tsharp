@@ -13,6 +13,59 @@ import (
 )
 
 
+// TODO: rewrite later...
+func (lexer *Lexer) PrintErrorLineAsString(line int, column int) {
+	var context string
+	var FirstContext string
+	var ThirdContext string
+	var FirstLineString string = fmt.Sprintf("%d | ", line-1)
+	var LineString string = fmt.Sprintf("%d | ", line)
+	var ThirdLineString string = fmt.Sprintf("%d | ", line+1)
+	for {
+		r, _, err := lexer.reader.ReadRune()
+		if r == '\n' {
+			lexer.resetPosition()
+		} else {
+			if line == lexer.pos.line {
+				context = context + string(r)
+			} 
+			if line - 1 != 0 {
+				if line - 1 == lexer.pos.line {
+					FirstContext = FirstContext + string(r)
+				}
+			}
+			if line + 1 == lexer.pos.line {
+				ThirdContext = ThirdContext + string(r)
+			}
+		}
+		if line + 2 == lexer.pos.line {
+			break
+		}
+		if err != nil {
+			if err == io.EOF {
+				err = nil
+				break
+			}
+			panic(err)
+		}
+	}
+	first := FirstLineString + FirstContext
+	middle := LineString + context
+	third := ThirdLineString + ThirdContext
+	fmt.Print("  ")
+	fmt.Println(first)
+	fmt.Print("  ")
+	fmt.Println(middle)
+	column += 5
+	for i := 0; i < column; i++ {
+		fmt.Print(" ")
+	}
+	color.Red("^")
+	fmt.Print("  ")
+	fmt.Println(third)
+}
+
+
 // -----------------------------
 // ----------- Lexer -----------
 // -----------------------------
@@ -250,17 +303,29 @@ func (lexer *Lexer) Lex() (Position, Token, string) {
 				} else if r == '"' {
 					startPos := lexer.pos
 					lexer.backup()
+					lexer.pos.column++
 					val := lexer.lexString()
+					lexer.pos.column++
 					r, _, err = lexer.reader.ReadRune()
 					return startPos, TOKEN_STRING, val
 				} else if string(r) == "'" {
 					startPos := lexer.pos
 					lexer.backup()
+					lexer.pos.column++
 					val := lexer.lexStringSingle()
+					lexer.pos.column++
 					r, _, err = lexer.reader.ReadRune()
 					return startPos, TOKEN_STRING, val
 				} else {
+					line := lexer.pos.line
+					col := lexer.pos.column
+					file, err := os.Open("main.tsp")
+					if err != nil {
+						panic(err)
+					}
+					lexer := LexerInit(file)
 					fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`.", lexer.pos.line, lexer.pos.column, string(r)))
+					lexer.PrintErrorLineAsString(line, col)
 					os.Exit(0)
 				}
         }
