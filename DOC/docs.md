@@ -247,43 +247,43 @@ import "main.tsp"
 ```pascal
 "Hello World" dup print print
 ```
-'dup' duplicate element on top of the stack. ( a -- a a )
+`dup` duplicate element on top of the stack. ( a -- a a )
 
 ### Drop
 ```pascal
 "Hello World" "T# Programming Language" drop print
 ```
-'drop' drops the top element of the stack. ( a --  )
+`drop` drops the top element of the stack. ( a --  )
 
 ### Rot
 ```python
 1 2 3 rot print print print
 ```
-'rot' rotate top three stack elements. ( a b c -- b c a )
+`rot` rotate top three stack elements. ( a b c -- b c a )
 
 ### Swap
 ```pascal
 1 2 swap print print
 ```
-'swap' swaps two values in stack. ( a b -- b a )
+`swap` swaps two values in stack. ( a b -- b a )
 
 ### Over
 ```python
 1 2 over print print print
 ```
-'over' copy the element below the top of the stack. ( a b -- a b a )
+`over` copy the element below the top of the stack. ( a b -- a b a )
 
 ### Inc
 ```python
 1 inc print
 ```
-'inc' increment the top element of the stack
+`inc` increment the top element of the stack
 
 ### Dec
 ```python
 10 dec print
 ```
-'dec' decrement the top element of the stack
+`dec` decrement the top element of the stack
 
 ### input
 ```python
@@ -296,7 +296,7 @@ input print
 exit
 print
 ```
-'exit' will exit the program.
+`exit` will exit the program.
 
 ### PrintS
 ```python
@@ -308,7 +308,7 @@ printS
 #     ↓ 
 #    <3>  1 2 'Hello World' <- top
 ```
-'printS' print all stack values. 'printS' won't drop stack value after print.
+`printS` print all stack values. 'printS' won't drop stack value after print.
 
 ## Examples
 ### FizzBuzz
