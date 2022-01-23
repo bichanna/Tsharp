@@ -16,12 +16,12 @@
 
 WARNING! THIS LANGUAGE IS A WORK IN PROGRESS! ANYTHING CAN CHANGE AT ANY MOMENT WITHOUT ANY NOTICE!
 
-It's like Forth and Porth, but written in Go.
+It's like Forth and Porth, but written in Go ʕ◔ϖ◔ʔ.
 <a href="https://en.wikipedia.org/wiki/Stack-oriented_programming">Stack-oriented programming</a>
 
 ### TODO
 - [ ] Compile to C
-- [ ] Self-hosted
+- [ ] Self-hosted (<a href="https://github.com/Tsharp-lang/TsharpTsharp">T# written in T#</a>)
 
 ### Install
 
