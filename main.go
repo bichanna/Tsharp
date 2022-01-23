@@ -1003,11 +1003,26 @@ func (scope *Scope) OpBinop(op uint8) (*Error) {
 	}
 	first := scope.Stack[len(scope.Stack)-1]
 	second := scope.Stack[len(scope.Stack)-2]
+	scope.OpDrop()
+	scope.OpDrop()
 	_, ok := first.(AsInt);
 	_, ok2 := second.(AsInt);
+
+	_, IsStr := first.(AsStr);
+	_, IsStr2 := second.(AsStr);
+
+	if IsStr && IsStr2 {
+		StrVal := second.(AsStr).StringValue + first.(AsStr).StringValue
+		expr := AsStr {
+			StrVal,
+		}
+		scope.OpPush(expr)
+		return nil
+	}
+
 	if !ok || !ok2 {
 		err := Error{}
-		err.message = fmt.Sprintf("StackIndexError: `%s` expected type <int>.", RetTokenAsStr(op))
+		err.message = fmt.Sprintf("StackIndexError: `%s` expected 2 <int> type or 2 <string> type elements in the stack.", RetTokenAsStr(op))
 		err.Type = TypeError
 		return &err
 	}
@@ -1019,8 +1034,6 @@ func (scope *Scope) OpBinop(op uint8) (*Error) {
 		case TOKEN_DIV: val = second.(AsInt).IntValue / first.(AsInt).IntValue
 		case TOKEN_REM: val = second.(AsInt).IntValue % first.(AsInt).IntValue
 	}
-	scope.OpDrop()
-	scope.OpDrop()
 	expr := AsInt {
 		val,
 	}
