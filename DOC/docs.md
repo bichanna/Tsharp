@@ -46,16 +46,17 @@ $ ./main.exe examples/main.tsp
 
 </td><td width=33% valign=top>
 
-* [Dup](#dup)
-* [Drop](#drop)
-* [Over](#over)
-* [Rot](#rot)
-* [Swap](#swap)
-* [Inc](#inc)
-* [Dec](#dec)
-* [Input](#input)
-* [Exit](#exit)
-* [PrintS](#prints)
+* [Built-in Words](built-in-words)
+    * [Dup](#dup)
+    * [Drop](#drop)
+    * [Over](#over)
+    * [Rot](#rot)
+    * [Swap](#swap)
+    * [Inc](#inc)
+    * [Dec](#dec)
+    * [Input](#input)
+    * [Exit](#exit)
+    * [PrintS](#prints)
 
 </td><td valign=top>
 
@@ -240,54 +241,55 @@ end
 import "main.tsp"
 ```
 
-## Dup
+## Built-in Words
+### Dup
 ```pascal
 "Hello World" dup print print
 ```
 'dup' duplicate element on top of the stack. ( a -- a a )
 
-## Drop
+### Drop
 ```pascal
 "Hello World" "T# Programming Language" drop print
 ```
 'drop' drops the top element of the stack. ( a --  )
 
-## Rot
+### Rot
 ```python
 1 2 3 rot print print print
 ```
 'rot' rotate top three stack elements. ( a b c -- b c a )
 
-## Swap
+### Swap
 ```pascal
 1 2 swap print print
 ```
 'swap' swaps two values in stack. ( a b -- b a )
 
-## Over
+### Over
 ```python
 1 2 over print print print
 ```
 'over' copy the element below the top of the stack. ( a b -- a b a )
 
-## Inc
+### Inc
 ```python
 1 inc print
 ```
 'inc' increment the top element of the stack
 
-## Dec
+### Dec
 ```python
 10 dec print
 ```
 'dec' decrement the top element of the stack
 
-## input
+### input
 ```python
 input print
 ```
 
-## Exit
+### Exit
 ```python
 "Hello World"
 exit
@@ -295,7 +297,7 @@ print
 ```
 'exit' will exit the program.
 
-## PrintS
+### PrintS
 ```python
 1 2 "Hello World!"
 
