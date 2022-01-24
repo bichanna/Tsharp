@@ -48,104 +48,13 @@ $ ./main.exe <filename>.tsp
 "Hello World" print
 ```
 
-### Fibonacci Sequence
-```pascal
-10000 -> N
+# Tic Tac Toe
 
-0 1 for over N < do
-  over puts " " puts
-  swap over +
-end
-drop drop
+tic tac toe written in T#
+https://github.com/Tsharp-lang/tictactoe
 
-"" print
-```
+![tictactoe](https://user-images.githubusercontent.com/81926489/150774403-dafdb578-ca0d-497a-b123-dcd1639654e8.gif)
 
-### Bubble Sort
-```factor
-{ 19 13 6 2 18 8 1 4 11 9 100 30 4 } -> arr arr print
-
-arr len -> length
-
-0 for dup length <= do
-    0 for dup length 1 - < do
-        dup -> j
-        j 1 + -> i
-        if arr j read arr i read > do
-            arr j read -> x
-            arr i read -> y
-            arr y j replace dup -> arr
-            x i replace -> arr
-        end 
-        inc
-    end drop
-    inc
-end drop
-
-arr print
-```
-
-### Factorial
-```pascal
-block Factorial do
-    -> N
-    1 -> x
-    for N 1 >= do
-        x N * -> x
-        N 1 - -> N
-    end
-    x
-end
-
-5
-call Factorial
-print
-```
-
-### FizzBuzz
-```pascal
-1 
-for dup 100 <= do
-    if dup 15 % 0 == do
-        "FizzBuzz" print
-    elif dup 3 % 0 == do
-        "Fizz" print
-    elif dup 5 % 0 == do
-        "Buzz" print
-    else
-        dup print
-    end
-    inc
-end drop
-```
-
-### Multiplication table
-```pascal
-block dclone do
-    dup -> tmpa
-    swap
-    dup -> tmpb
-    swap
-    tmpb
-    tmpa
-end
-
-1 for dup 10 < do
-    1 for dup 10 < do
-        call dclone
-        *
-        if dup 10 < do
-            " " puts
-        end
-        puts
-        " " puts
-        inc
-    end
-    " " print
-    drop
-    inc
-end
-```
 
 ### Contributing
 Welcome! 💕
