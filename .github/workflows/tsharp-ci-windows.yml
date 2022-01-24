@@ -14,6 +14,6 @@ jobs:
     - name: build
       run: go build main.go
     - name: run
-      run: .\main.exe test\ci-test.t#
+      run: .\main.exe test\ci-test.tsp
     - name: clean
       run: Del "main.exe"
