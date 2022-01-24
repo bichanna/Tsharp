@@ -18,7 +18,7 @@
 </div>
 WARNING! THIS LANGUAGE IS A WORK IN PROGRESS! ANYTHING CAN CHANGE AT ANY MOMENT WITHOUT ANY NOTICE!
 <br><br>
-It's like Forth and Porth, but written in Go ʕ◔ϖ◔ʔ.
+It's like Forth, but written in Go ʕ◔ϖ◔ʔ.
 <a href="https://en.wikipedia.org/wiki/Stack-oriented_programming">Stack-oriented programming</a>
 
 ### TODO
