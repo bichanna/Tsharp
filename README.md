@@ -25,14 +25,12 @@ It's like Forth, but written in Go ʕ◔ϖ◔ʔ.
 - [ ] Compile to C
 - [ ] Self-hosted (<a href="https://github.com/Tsharp-lang/TsharpTsharp">T# written in T#</a>)
 
-### Install
+### Install (build) && Run
 
 > Install
 ```
 go build main.go
 ```
-
-### Run
 
 > Run
 ```
@@ -43,7 +41,7 @@ or
 $ ./main.exe <filename>.tsp
 ```
 
-### Hello World
+# Hello World
 ```pascal
 "Hello World" print
 ```
