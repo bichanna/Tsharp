@@ -220,6 +220,16 @@ end
 end
 ```
 
+write loop like other languages
+```
+# T#                       |    // JavaScript
+0 for dup 100 < do -> i    |    var i = 0
+    i print                |    while (i < 100) {
+    i inc -> i             |       console.log(i);
+end                        |       i++;
+                           |    }
+```
+
 ## Error handling
 
 `StackIndexError`
