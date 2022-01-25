@@ -1748,48 +1748,28 @@ func (scope *Scope) VisitorVisit(node AST, IsTry bool) (bool, *Error) {
 			case AsPush:
 				err = scope.OpPush(node.(AsPush).value)
 			case AsId:
-				if node.(AsId).name == "print" {
-					err = scope.OpPrint()
-				} else if node.(AsId).name == "puts" {
-					err = scope.OpPuts()
-				} else if node.(AsId).name == "printS" {
-					scope.OpPrintS()
-				} else if node.(AsId).name == "break" {
-					BreakValue = true
-				} else if node.(AsId).name == "drop" {
-					err = scope.OpDrop()
-				} else if node.(AsId).name == "swap" {
-					err = scope.OpSwap()
-				} else if node.(AsId).name == "inc" {
-					err = scope.OpInc()
-				} else if node.(AsId).name == "dec" {
-					err = scope.OpDec()
-				} else if node.(AsId).name == "dup" {
-					err = scope.OpDup()
-				} else if node.(AsId).name == "append" {
-					err = scope.OpAppend()
-				} else if node.(AsId).name == "read" {
-					err = scope.OpRead()
-				} else if node.(AsId).name == "replace" {
-					err = scope.OpReplace()
-				} else if node.(AsId).name == "remove" {
-					err = scope.OpRemove()
-				} else if node.(AsId).name == "in" {
-					err = scope.OpIn()
-				} else if node.(AsId).name == "len" {
-					err = scope.OpLen()
-				} else if node.(AsId).name == "typeof" {
-					err = scope.OpTypeOf()
-				} else if node.(AsId).name == "rot" {
-					err = scope.OpRot()
-				} else if node.(AsId).name == "over" {
-					err = scope.OpOver()
-				} else if node.(AsId).name == "exit" {
-					os.Exit(0)
-				} else if node.(AsId).name == "input" {
-					scope.OpInput()
-				} else {
-					panic("unreachable")
+				switch node.(AsId).name {
+					case "print": err = scope.OpPrint()
+					case "puts": err = scope.OpPuts()
+					case "printS": scope.OpPrintS()
+					case "break": BreakValue = true
+					case "drop": err = scope.OpDrop()
+					case "swap": err = scope.OpSwap()
+					case "inc": err = scope.OpInc()
+					case "dec": err = scope.OpDec()
+					case "dup": err = scope.OpDup()
+					case "append": err = scope.OpAppend()
+					case "read": err = scope.OpRead()
+					case "replace": err = scope.OpReplace()
+					case "remove": err = scope.OpRemove()
+					case "in": err = scope.OpIn()
+					case "len": err = scope.OpLen()
+					case "typeof": err = scope.OpTypeOf()
+					case "rot": err = scope.OpRot()
+					case "over": err = scope.OpOver()
+					case "exit": os.Exit(0)
+					case "input": scope.OpInput()
+					default: panic("unreachable")
 				}
 			case AsBinop:
 				err = scope.OpBinop(node.(AsBinop).op)
