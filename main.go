@@ -931,31 +931,45 @@ func InitScope() *Scope {
 	}
 }
 
-func CreateAsList(node AST) (AST) {
-	scope := InitScope()
-	if node.(NewList).ListBody != nil {
-		scope.VisitorVisit(node.(NewList).ListBody, false)
-	}
-	var expr AST = AsList {
-		scope.Stack,
-	}
-	return expr
-}
-
-func (scope *Scope) OpPush(node AST) (*Error) {
+func (scope *Scope) OpPush(node AST, VariableScope *map[string]AST) (*Error) {
 	_, IsList := node.(NewList);
 	_, IsVar := node.(Var);
 	if IsList {
-		scope.Stack = append(scope.Stack, CreateAsList(node))
+		scope := InitScope()
+		if node.(NewList).ListBody != nil {
+			scope.VisitorVisit(node.(NewList).ListBody, false, VariableScope)
+		}
+		var expr AST = AsList {
+			scope.Stack,
+		}
+		scope.Stack = append(scope.Stack, expr)
 	} else if IsVar {
-		if _, ok := Variables[node.(Var).Name]; ok {
-			VarValue := Variables[node.(Var).Name]
-			scope.Stack = append(scope.Stack, VarValue)
+		if VariableScope == nil {
+			if _, ok := Variables[node.(Var).Name]; ok {
+				VarValue := Variables[node.(Var).Name]
+				scope.Stack = append(scope.Stack, VarValue)
+			} else {
+				err := Error{}
+				err.message = fmt.Sprintf("NameError: undefined variable `%s`", node.(Var).Name)
+				err.Type = NameError
+				return &err
+			}
 		} else {
-			err := Error{}
-			err.message = fmt.Sprintf("NameError: undefined variable `%s`", node.(Var).Name)
-			err.Type = NameError
-			return &err
+			VariablesScope := *VariableScope
+			if _, ok := VariablesScope[node.(Var).Name]; ok {
+				VarValue := VariablesScope[node.(Var).Name]
+				scope.Stack = append(scope.Stack, VarValue)
+			} else {
+				if _, ok := Variables[node.(Var).Name]; ok {
+					VarValue := Variables[node.(Var).Name]
+					scope.Stack = append(scope.Stack, VarValue)
+				} else {
+					err := Error{}
+					err.message = fmt.Sprintf("NameError: undefined variable `%s`", node.(Var).Name)
+					err.Type = NameError
+					return &err
+				}
+			}
 		}
 	} else {
 		scope.Stack = append(scope.Stack, node)
@@ -985,8 +999,8 @@ func (scope *Scope) OpSwap() (*Error) {
 	second := scope.Stack[len(scope.Stack)-2]
 	scope.OpDrop()
 	scope.OpDrop()
-	scope.OpPush(first)
-	scope.OpPush(second)
+	scope.OpPush(first, nil)
+	scope.OpPush(second, nil)
 	return nil
 }
 
@@ -1016,7 +1030,7 @@ func (scope *Scope) OpBinop(op uint8) (*Error) {
 		expr := AsStr {
 			StrVal,
 		}
-		scope.OpPush(expr)
+		scope.OpPush(expr, nil)
 		return nil
 	}
 
@@ -1037,7 +1051,7 @@ func (scope *Scope) OpBinop(op uint8) (*Error) {
 	expr := AsInt {
 		val,
 	}
-	scope.OpPush(expr)
+	scope.OpPush(expr, nil)
 	return nil
 }
 
@@ -1111,7 +1125,7 @@ func (scope *Scope) OpCompare(op uint8) (*Error) {
 	expr := AsBool {
 		val,
 	}
-	scope.OpPush(expr)
+	scope.OpPush(expr, nil)
 	return nil
 }
 
@@ -1219,8 +1233,8 @@ func (scope *Scope) OpPrintS() {
 	}
 }
 
-func (scope *Scope) OpIf(node AST, IsTry bool) (bool, *Error) {
-	scope.VisitorVisit(node.(If).IfOp, IsTry)
+func (scope *Scope) OpIf(node AST, IsTry bool, VariableScope *map[string]AST) (bool, *Error) {
+	scope.VisitorVisit(node.(If).IfOp, IsTry, VariableScope)
 	var BreakValue bool = false
 	var err *Error = nil
 	if len(scope.Stack) < 1 {
@@ -1238,14 +1252,14 @@ func (scope *Scope) OpIf(node AST, IsTry bool) (bool, *Error) {
 	}
 	scope.OpDrop()
 	if expr.(AsBool).BoolValue {
-		BreakValue, err = scope.VisitorVisit(node.(If).IfBody, IsTry)
+		BreakValue, err, _ = scope.VisitorVisit(node.(If).IfBody, IsTry, VariableScope)
 		if err != nil {
 			return BreakValue, err
 		}
 		return BreakValue, nil
 	}
 	for i := 0; i < len(node.(If).ElifOps); i++ {
-		scope.VisitorVisit(node.(If).ElifOps[i], IsTry)
+		scope.VisitorVisit(node.(If).ElifOps[i], IsTry, VariableScope)
 		if len(scope.Stack) < 1 {
 			err := Error{}
 			err.message = "StackIndexError: if statement expected one or more <bool> type element in the stack."
@@ -1261,20 +1275,20 @@ func (scope *Scope) OpIf(node AST, IsTry bool) (bool, *Error) {
 		}
 		scope.OpDrop()
 		if expr.(AsBool).BoolValue {
-			BreakValue, err = scope.VisitorVisit(node.(If).ElifBodys[i], IsTry)
+			BreakValue, err, _ = scope.VisitorVisit(node.(If).ElifBodys[i], IsTry, VariableScope)
 			return BreakValue, err
 		}
 	}
 	if node.(If).ElseBody != nil {
-		BreakValue, err = scope.VisitorVisit(node.(If).ElseBody, IsTry)
+		BreakValue, err, _ = scope.VisitorVisit(node.(If).ElseBody, IsTry, VariableScope)
 	}
 	return BreakValue, err
 }
 
-func (scope *Scope) OpFor(node AST, IsTry bool) (*Error) {
+func (scope *Scope) OpFor(node AST, IsTry bool, VariableScope *map[string]AST) (*Error) {
 	var BreakValue bool
 	for {
-		_, err := scope.VisitorVisit(node.(For).ForOp, IsTry)
+		_, err, _ := scope.VisitorVisit(node.(For).ForOp, IsTry, VariableScope)
 		if err != nil {
 			return err
 		}
@@ -1295,7 +1309,7 @@ func (scope *Scope) OpFor(node AST, IsTry bool) (*Error) {
 		if !expr.(AsBool).BoolValue {
 			return nil
 		}
-		BreakValue, err = scope.VisitorVisit(node.(For).ForBody, IsTry)
+		BreakValue, err, _ = scope.VisitorVisit(node.(For).ForBody, IsTry, VariableScope)
 		if err != nil {
 			return err
 		}
@@ -1306,12 +1320,12 @@ func (scope *Scope) OpFor(node AST, IsTry bool) (*Error) {
 	return nil
 }
 
-func (scope *Scope) OpTry(node AST) (*Error) {
-	_, err := scope.VisitorVisit(node.(Try).TryBody, true)
+func (scope *Scope) OpTry(node AST, VariableScope *map[string]AST) (*Error) {
+	_, err, _ := scope.VisitorVisit(node.(Try).TryBody, true, nil)
 	if err != nil {
 		for i := 0; i < len(node.(Try).ExceptErrors); i++ {
 			if node.(Try).ExceptErrors[i].(AsError).err == err.Type {
-				scope.VisitorVisit(node.(Try).ExceptBodys[i], false)
+				scope.VisitorVisit(node.(Try).ExceptBodys[i], false, VariableScope)
 				return nil
 			}
 		}
@@ -1339,7 +1353,7 @@ func (scope *Scope) OpInc() (*Error) {
 	expr := AsInt {
 		val,
 	}
-	scope.OpPush(expr)
+	scope.OpPush(expr, nil)
 	return nil
 }
 
@@ -1363,7 +1377,7 @@ func (scope *Scope) OpDec() (*Error) {
 	expr := AsInt {
 		val,
 	}
-	scope.OpPush(expr)
+	scope.OpPush(expr, nil)
 	return nil
 }
 
@@ -1375,7 +1389,7 @@ func (scope *Scope) OpDup() (*Error) {
 		return &err
 	}
 	first := scope.Stack[len(scope.Stack)-1]
-	scope.OpPush(first)
+	scope.OpPush(first, nil)
 	return nil
 }
 
@@ -1398,7 +1412,7 @@ func (scope *Scope) OpAppend() (*Error) {
 	var NewList AST = AsList {
 		a,
 	}
-	scope.OpPush(NewList)
+	scope.OpPush(NewList, nil)
 	return nil
 }
 
@@ -1434,7 +1448,7 @@ func (scope *Scope) OpRead() (*Error) {
 			err.Type = IndexError
 			return &err
 		}
-		scope.OpPush(visitedList.(AsList).ListArgs[int(visitedIndex.(AsInt).IntValue)])
+		scope.OpPush(visitedList.(AsList).ListArgs[int(visitedIndex.(AsInt).IntValue)], nil)
 	} else {
 		if len(visitedList.(AsStr).StringValue) <= visitedIndex.(AsInt).IntValue {
 			err := Error{}
@@ -1446,7 +1460,7 @@ func (scope *Scope) OpRead() (*Error) {
 		var StrExpr AST = AsStr {
 			StringValue,
 		}
-		scope.OpPush(StrExpr)
+		scope.OpPush(StrExpr, nil)
 	}
 	return nil
 }
@@ -1483,7 +1497,7 @@ func (scope *Scope) OpReplace() (*Error) {
 	scope.OpDrop()
 	scope.OpDrop()
 	scope.OpDrop()
-	scope.OpPush(visitedList)
+	scope.OpPush(visitedList, nil)
 	return nil
 }
 
@@ -1522,7 +1536,7 @@ func (scope *Scope) OpRemove() (*Error) {
 	visitedList = nil
 	scope.OpDrop()
 	scope.OpDrop()
-	scope.OpPush(ListExpr)
+	scope.OpPush(ListExpr, nil)
 	return nil
 }
 
@@ -1554,14 +1568,14 @@ func (scope *Scope) OpIn() (*Error) {
 			expr := AsBool {
 				true,
 			}
-			scope.OpPush(expr)
+			scope.OpPush(expr, nil)
 			return nil
 		}
 	}
 	expr := AsBool {
 		false,
 	}
-	scope.OpPush(expr)
+	scope.OpPush(expr, nil)
 	return nil
 }
 
@@ -1588,7 +1602,7 @@ func (scope *Scope) OpLen() (*Error) {
 		IntExpr.IntValue = len(visitedExpr.(AsStr).StringValue)
 	}
 	scope.OpDrop()
-	scope.OpPush(IntExpr)
+	scope.OpPush(IntExpr, nil)
 	return nil
 }
 
@@ -1613,7 +1627,7 @@ func (scope *Scope) OpTypeOf() (*Error) {
 		TypeVal,
 	}
 	scope.OpDrop()
-	scope.OpPush(expr)
+	scope.OpPush(expr, nil)
 	return nil
 }
 
@@ -1630,9 +1644,9 @@ func (scope *Scope) OpRot() (*Error) {
 	scope.OpDrop()
 	scope.OpDrop()
 	scope.OpDrop()
-	scope.OpPush(visitedExprSecond)
-	scope.OpPush(visitedExpr)
-	scope.OpPush(visitedExprThird)
+	scope.OpPush(visitedExprSecond, nil)
+	scope.OpPush(visitedExpr, nil)
+	scope.OpPush(visitedExprThird, nil)
 	return nil
 }
 
@@ -1643,20 +1657,33 @@ func (scope *Scope) OpOver() (*Error) {
 		err.Type = StackIndexError
 		return &err
 	}
-	scope.OpPush(scope.Stack[len(scope.Stack)-2])
+	scope.OpPush(scope.Stack[len(scope.Stack)-2], nil)
 	return nil
 }
 
-func (scope *Scope) OpVardef(name string) (*Error) {
+func (scope *Scope) OpVardef(name string, VariableScope *map[string]AST) (*Error) {
 	if len(scope.Stack) < 1 {
 		err := Error{}
 		err.message = fmt.Sprintf("StackIndexError: variable `%s` definiton expected one or more element in the stack.", name)
 		err.Type = StackIndexError
 		return &err
 	}
-	VarValue := scope.Stack[len(scope.Stack)-1]
-	Variables[name] = VarValue
-	scope.OpDrop()
+	if VariableScope == nil {
+		VarValue := scope.Stack[len(scope.Stack)-1]
+		Variables[name] = VarValue
+		scope.OpDrop()
+	} else {
+		if _, ok := Variables[name]; ok {
+			VarValue := scope.Stack[len(scope.Stack)-1]
+			Variables[name] = VarValue
+			scope.OpDrop()
+		} else {
+			VariablesScope := *VariableScope
+			VarValue := scope.Stack[len(scope.Stack)-1]
+			VariablesScope[name] = VarValue
+			scope.OpDrop()
+		}
+	}
 	return nil
 }
 
@@ -1678,7 +1705,8 @@ func (scope *Scope) OpCallBlock(name string) *Error {
 		err.Type = NameError
 		return &err
 	}
-	scope.VisitorVisit(Blocks[name], false)
+	VariableScope := map[string]AST{}
+	scope.VisitorVisit(Blocks[name], false, &VariableScope)
 	return nil
 }
 
@@ -1696,7 +1724,7 @@ func (scope *Scope) OpImport(FileName string) (*Error) {
 	lexer := LexerInit(file, FileName)
 	parser := ParserInit(lexer)
 	ast := ParserParse(parser)
-	scope.VisitorVisit(ast, false)
+	scope.VisitorVisit(ast, false, nil)
 	return nil
 }
 
@@ -1732,21 +1760,21 @@ func (scope *Scope) OpInput() {
 	StrExpr := AsStr {
 		input,
 	}
-	scope.OpPush(StrExpr)
+	scope.OpPush(StrExpr, nil)
 }
 
 // -----------------------------
 // --------- Visitor -----------
 // -----------------------------
 
-func (scope *Scope) VisitorVisit(node AST, IsTry bool) (bool, *Error) {
+func (scope *Scope) VisitorVisit(node AST, IsTry bool, VariableScope *map[string]AST) (bool, *Error, *map[string]AST) {
 	BreakValue := false
 	var err *Error
 	for i := 0; i < len(node.(AsStatements)); i++ {
 		node := node.(AsStatements)[i]
 		switch node.(type) {
 			case AsPush:
-				err = scope.OpPush(node.(AsPush).value)
+				err = scope.OpPush(node.(AsPush).value, VariableScope)
 			case AsId:
 				switch node.(AsId).name {
 					case "print": err = scope.OpPrint()
@@ -1774,7 +1802,7 @@ func (scope *Scope) VisitorVisit(node AST, IsTry bool) (bool, *Error) {
 			case AsBinop:
 				err = scope.OpBinop(node.(AsBinop).op)
 			case Vardef:
-				err = scope.OpVardef(node.(Vardef).Name)
+				err = scope.OpVardef(node.(Vardef).Name, VariableScope)
 			case Blockdef:
 				err = scope.OpBlockdef(node)
 			case CallBlock:
@@ -1784,13 +1812,13 @@ func (scope *Scope) VisitorVisit(node AST, IsTry bool) (bool, *Error) {
 			case Compare:
 				err = scope.OpCompare(node.(Compare).op)
 			case AsStatements:
-				scope.VisitorVisit(node.(AsStatements), IsTry)
+				scope.VisitorVisit(node.(AsStatements), IsTry, VariableScope)
 			case If:
-				BreakValue, err = scope.OpIf(node.(If), IsTry)
+				BreakValue, err = scope.OpIf(node.(If), IsTry, VariableScope)
 			case For:
-				err = scope.OpFor(node.(For), IsTry)
+				err = scope.OpFor(node.(For), IsTry, VariableScope)
 			case Try:
-				err = scope.OpTry(node.(Try))
+				err = scope.OpTry(node.(Try), VariableScope)
 			case Assert:
 				err = scope.OpAssert(node)
 			default:
@@ -1801,13 +1829,13 @@ func (scope *Scope) VisitorVisit(node AST, IsTry bool) (bool, *Error) {
 				fmt.Println(err.message)
 				os.Exit(0)
 			}
-			return BreakValue, err
+			return BreakValue, err, VariableScope
 		}
 		if BreakValue {
 			break
 		}
 	}
-	return BreakValue, err
+	return BreakValue, err, VariableScope
 }
 
 
@@ -1844,6 +1872,6 @@ func main() {
 	parser := ParserInit(lexer)
 	ast := ParserParse(parser)
 	scope := InitScope()
-	scope.VisitorVisit(ast, false)
+	scope.VisitorVisit(ast, false, nil)
 }
 
