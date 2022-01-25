@@ -22,7 +22,9 @@ $ ./main.exe examples/main.tsp
 
 * [Hello World](#hello-world)
 * [Comments](#comments)
+
 * [Variables](#variables)
+    * [Variable Scopes](#variable-scopes)
 
 * [Data types](#data-types)
     * [Typeof](#typeof)
@@ -89,6 +91,39 @@ $ ./main.exe examples/main.tsp
 x -> y
 
 y print
+```
+### Variable Scopes
+```crystal
+10 -> N # Global variable
+
+block Main do
+    N print
+    100 -> A # `A` can only be used within the Main function.
+
+    if true do
+        A print
+    end
+
+    # `i` can only be used within the Main function.
+    0 for dup 2 < do -> i
+        i print
+        i inc
+    end
+end
+
+call Main
+
+try
+    A print # error
+except NameError do
+    "`A` var error" print
+end
+
+try
+    i print # error
+except NameError do
+    "`i` var error" print
+end
 ```
 
 ## Data types
