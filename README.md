@@ -45,6 +45,19 @@ $ ./main.exe <filename>.tsp
 ```pascal
 "Hello World" print
 ```
+```Crystal
+block main do
+    {"game" "web" "tools" "science" "systems" "embedded" "drivers" "GUI" "mobile"} -> areas
+
+  0 for dup areas len < do -> i
+        "Hello, " puts areas i read puts " developers!" print
+        i inc
+    end
+end
+
+call main
+```
+
 
 # Tic Tac Toe
 
