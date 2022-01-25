@@ -935,12 +935,12 @@ func (scope *Scope) OpPush(node AST, VariableScope *map[string]AST) (*Error) {
 	_, IsList := node.(NewList);
 	_, IsVar := node.(Var);
 	if IsList {
-		scope := InitScope()
+		ListScope := InitScope()
 		if node.(NewList).ListBody != nil {
-			scope.VisitorVisit(node.(NewList).ListBody, false, VariableScope)
+			ListScope.VisitorVisit(node.(NewList).ListBody, false, VariableScope)
 		}
 		var expr AST = AsList {
-			scope.Stack,
+			ListScope.Stack,
 		}
 		scope.Stack = append(scope.Stack, expr)
 	} else if IsVar {
