@@ -1,5 +1,9 @@
-<div align="center">    
-    <img width="100px" src="https://user-images.githubusercontent.com/81926489/143374038-059715ef-a83d-479d-a8c3-56ea57b8cc8e.PNG">
+<div align="center">
+    <!-----
+    <img width="270px" src="https://user-images.githubusercontent.com/81926489/150945088-28b9066c-c8e2-4c6b-b8f7-fea491cdebff.PNG">
+    ------->
+    <br>
+    <img width="300px" src="https://user-images.githubusercontent.com/81926489/150945785-a4b40a2c-e68b-4bf8-b68c-009cc33985ba.PNG">
     <h1> The T# Programming Language</h1>
 
 
