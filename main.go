@@ -306,16 +306,16 @@ func (lexer *Lexer) Lex() (Position, Token, string, string) {
 					startPos := lexer.pos
 					lexer.backup()
 					lexer.pos.column++
-					val := lexer.lexString()
 					lexer.pos.column++
+					val, _ := strconv.Unquote(lexer.lexString())
 					r, _, err = lexer.reader.ReadRune()
 					return startPos, TOKEN_STRING, val, lexer.FileName
 				} else if string(r) == "'" {
 					startPos := lexer.pos
 					lexer.backup()
 					lexer.pos.column++
-					val := lexer.lexStringSingle()
 					lexer.pos.column++
+					val, _ := strconv.Unquote(lexer.lexStringSingle())
 					r, _, err = lexer.reader.ReadRune()
 					return startPos, TOKEN_STRING, val, lexer.FileName
 				} else {
@@ -391,6 +391,7 @@ func (lexer *Lexer) lexInt() string {
 func (lexer *Lexer) lexString() string {
 	var val string
 	r, _, err := lexer.reader.ReadRune()
+	val = val + string(r)
 	for {
 		r, _, err = lexer.reader.ReadRune()
 		if err != nil {
@@ -402,6 +403,7 @@ func (lexer *Lexer) lexString() string {
 		if r != '"' {
 			val = val + string(r)
 		} else {
+			val = val + string(r)
 			lexer.backup()
 			return val
 		}
@@ -411,6 +413,7 @@ func (lexer *Lexer) lexString() string {
 func (lexer *Lexer) lexStringSingle() string {
 	var val string
 	r, _, err := lexer.reader.ReadRune()
+	val = val + string("\"")
 	for {
 		r, _, err = lexer.reader.ReadRune()
 		if err != nil {
@@ -422,6 +425,7 @@ func (lexer *Lexer) lexStringSingle() string {
 		if string(r) != "'" {
 			val = val + string(r)
 		} else {
+			val = val + "\""
 			lexer.backup()
 			return val
 		}
