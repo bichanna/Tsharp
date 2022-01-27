@@ -1162,36 +1162,6 @@ func (scope *Scope) OpPrint() (*Error) {
 	}
 	expr := scope.Stack[len(scope.Stack)-1]
 	switch expr.(type) {
-		case AsStr: fmt.Println(expr.(AsStr).StringValue)
-		case AsInt: fmt.Println(expr.(AsInt).IntValue)
-		case AsBool: fmt.Println(expr.(AsBool).BoolValue)
-		case AsType: fmt.Println(fmt.Sprintf("<%s>" ,expr.(AsType).TypeValue))
-		case AsError:
-			switch expr.(AsError).err {
-				case NameError: fmt.Println("<error 'NameError'>")
-				case StackIndexError: fmt.Println("<error 'StackIndexError'>")
-				case ImportError: fmt.Println("<error 'ImportError'>")
-				case IndexError: fmt.Println("<error 'IndexError'>")
-				case TypeError: fmt.Println("<error 'TypeError'>")
-				default: fmt.Println(fmt.Sprintf("unexpected error <%d>", expr.(AsError).err))
-			}
-		case AsList:
-			PrintAsList(expr)
-			fmt.Println()
-	}
-	scope.OpDrop()
-	return nil
-}
-
-func (scope *Scope) OpPuts() (*Error) {
-	if len(scope.Stack) < 1 {
-		err := Error{}
-		err.message = "StackIndexError: `puts` the stack is empty."
-		err.Type = StackIndexError
-		return &err
-	}
-	expr := scope.Stack[len(scope.Stack)-1]
-	switch expr.(type) {
 		case AsStr: fmt.Print(expr.(AsStr).StringValue)
 		case AsInt: fmt.Print(expr.(AsInt).IntValue)
 		case AsBool: fmt.Print(expr.(AsBool).BoolValue)
@@ -1782,7 +1752,6 @@ func (scope *Scope) VisitorVisit(node AST, IsTry bool, VariableScope *map[string
 			case AsId:
 				switch node.(AsId).name {
 					case "print": err = scope.OpPrint()
-					case "puts": err = scope.OpPuts()
 					case "printS": scope.OpPrintS()
 					case "break": BreakValue = true
 					case "drop": err = scope.OpDrop()
