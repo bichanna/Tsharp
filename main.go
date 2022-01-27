@@ -752,7 +752,7 @@ func ParserParse(parser *Parser) AST {
 	for {
 		if parser.current_token_type == TOKEN_ID {
 			if parser.current_token_value == "print" || parser.current_token_value == "break" || parser.current_token_value == "append" || parser.current_token_value == "remove" || parser.current_token_value == "swap" || parser.current_token_value == "in" || parser.current_token_value == "typeof" || parser.current_token_value == "rot" || parser.current_token_value == "len" || parser.current_token_value == "input" ||
-			   parser.current_token_value == "drop"  || parser.current_token_value == "dup" || parser.current_token_value == "inc" || parser.current_token_value == "dec" || parser.current_token_value == "replace" || parser.current_token_value == "read" || parser.current_token_value == "puts" || parser.current_token_value == "over" || parser.current_token_value == "printS" || parser.current_token_value == "exit" {
+			   parser.current_token_value == "drop"  || parser.current_token_value == "dup" || parser.current_token_value == "inc" || parser.current_token_value == "dec" || parser.current_token_value == "replace" || parser.current_token_value == "read" || parser.current_token_value == "println" || parser.current_token_value == "over" || parser.current_token_value == "printS" || parser.current_token_value == "exit" {
 				name := parser.current_token_value
 				IdExpr := AsId{name}
 				parser.ParserEat(TOKEN_ID)
@@ -1151,6 +1151,36 @@ func PrintAsList(node AST) {
 		}
 	}
 	print("}")
+}
+
+func (scope *Scope) OpPrintln() (*Error) {
+	if len(scope.Stack) < 1 {
+		err := Error{}
+		err.message = "StackIndexError: `println` the stack is empty."
+		err.Type = StackIndexError
+		return &err
+	}
+	expr := scope.Stack[len(scope.Stack)-1]
+	switch expr.(type) {
+		case AsStr: fmt.Println(expr.(AsStr).StringValue)
+		case AsInt: fmt.Println(expr.(AsInt).IntValue)
+		case AsBool: fmt.Println(expr.(AsBool).BoolValue)
+		case AsType: fmt.Println(fmt.Sprintf("<%s>" ,expr.(AsType).TypeValue))
+		case AsError:
+			switch expr.(AsError).err {
+				case NameError: fmt.Println("<error 'NameError'>")
+				case StackIndexError: fmt.Println("<error 'StackIndexError'>")
+				case ImportError: fmt.Println("<error 'ImportError'>")
+				case IndexError: fmt.Println("<error 'IndexError'>")
+				case TypeError: fmt.Println("<error 'TypeError'>")
+				default: fmt.Println(fmt.Sprintf("unexpected error <%d>", expr.(AsError).err))
+			}
+		case AsList:
+			PrintAsList(expr)
+			fmt.Println()
+	}
+	scope.OpDrop()
+	return nil
 }
 
 func (scope *Scope) OpPrint() (*Error) {
@@ -1751,6 +1781,7 @@ func (scope *Scope) VisitorVisit(node AST, IsTry bool, VariableScope *map[string
 				err = scope.OpPush(node.(AsPush).value, VariableScope)
 			case AsId:
 				switch node.(AsId).name {
+					case "println": err = scope.OpPrintln()
 					case "print": err = scope.OpPrint()
 					case "printS": scope.OpPrintS()
 					case "break": BreakValue = true
