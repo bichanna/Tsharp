@@ -75,7 +75,7 @@ $ ./main.exe examples/main.tsp
 
 ## Hello World
 ```pascal
-"Hello World!" print
+"Hello World!\n" print
 ```
 `print` will print the top element of the stack, then remove it.
 
@@ -116,13 +116,13 @@ call Main
 try
     A print # error
 except NameError do
-    "`A` var error" print
+    "`A` var error\n" print
 end
 
 try
     i print # error
 except NameError do
-    "`i` var error" print
+    "`i` var error\n" print
 end
 ```
 
@@ -138,7 +138,7 @@ error # NameError, StackIndexError...
 
 ### Typeof
 ```python
-"Hello World" typeof print
+"Hello World\n" typeof print
 ```
 `typeof` push the type of the top element of the stack. The element that `typeof` used will be dropped.
 
@@ -156,7 +156,7 @@ error # NameError, StackIndexError...
 ## Block
 ```pascal
 block main do
-    "Hello World!" print
+    "Hello World!\n" print
 end
 
 call main
@@ -192,31 +192,31 @@ call main
 ## If Statement
 ```pascal
 if true do
-    "Hello World" print
+    "Hello World\n" print
 end
 ```
 ```pascal
 if false do
-    "Hello World" print
+    "Hello World\n" print
 else
-    "Hello John Doe" print
+    "Hello John Doe\n" print
 end
 ```
 ```pascal
 if false do
-    "Hello World" print
+    "Hello World\n" print
 elif true
-    "Hello John Doe" print
+    "Hello John Doe\n" print
 end
 ```
 ```pascal
 if true false || do
-    "Hello World" print
+    "Hello World\n" print
 end
 ```
 ```pascal
 if true true && do
-    "Hello World" print
+    "Hello World\n" print
 end
 ```
 ```pascal
@@ -231,7 +231,7 @@ end
 11 -> N
 
 if N { 20 30 11 42 28 91 } in do
-    "Hello World!" print
+    "Hello World!\n" print
 end
 ```
 
@@ -277,11 +277,11 @@ end                        |       i++;
 try 
     dup
 except StackIndexError do
-    "Error..." print
+    "Error...\n" print
 except IndexError do
-    "Error..." print
+    "Error...\n" print
 except NameError do
-    "Error..." print
+    "Error...\n" print
 end
 ```
 
@@ -348,7 +348,7 @@ input print
 
 ### Exit
 ```python
-"Hello World"
+"Hello World\n"
 exit
 print
 ```
@@ -356,7 +356,7 @@ print
 
 ### PrintS
 ```python
-1 2 "Hello World!"
+1 2 "Hello World!\n"
 
 printS
 
@@ -372,11 +372,11 @@ printS
 1 
 for dup 100 <= do
     if dup 15 % 0 == do
-        "FizzBuzz" print
+        "FizzBuzz\n" print
     elif dup 3 % 0 == do
-        "Fizz" print
+        "Fizz\n" print
     elif dup 5 % 0 == do
-        "Buzz" print
+        "Buzz\n" print
     else
         dup print
     end
@@ -430,12 +430,12 @@ arr print
 10000 -> n
 
 0 1 for over n < do
-  over puts " " puts
+  over print " \n" print
   swap over +
 end
 drop drop
 
-"" print
+"\n" print
 ```
 
 
