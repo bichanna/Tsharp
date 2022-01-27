@@ -54,7 +54,7 @@ block main do
     {"game" "web" "tools" "science" "systems" "embedded" "drivers" "GUI" "mobile"} -> areas
 
   0 for dup areas len < do -> i
-        "Hello, " puts areas i read puts " developers!" print
+        "Hello, " print areas i read print " developers!\n" print
         i inc
     end
 end
