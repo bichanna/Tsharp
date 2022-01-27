@@ -1,13 +1,14 @@
 # T# Documentation
 
 ## Introduction
+T# is a dynamic typed stack-oriented programming language designed for building software.
 
-T# is a Stack-based programming language designed for building software.
+It's similar to Forth, Porth but written in Go.
 
-It's like Forth but written in Go ʕ◔ϖ◔ʔ.
+`WARNING! THIS LANGUAGE IS A WORK IN PROGRESS! ANYTHING CAN CHANGE AT ANY MOMENT WITHOUT ANY NOTICE!`
 
-## Install & Run
-```bash
+## Build
+```shell
 $ git clone https://github.com/Tsharp-lang/Tsharp
 $ cd tsharp
 $ go build main.go
@@ -16,426 +17,228 @@ or
 $ ./main.exe examples/main.tsp
 ```
 
-## Table of Contents
-<table>
-    <tr><td width=33% valign=top>
-
-* [Hello World](#hello-world)
-* [Comments](#comments)
-
-* [Variables](#variables)
-    * [Variable Scopes](#variable-scopes)
-
-* [Data types](#data-types)
-    * [Typeof](#typeof)
-
-* [Arithmetic](#arithmetic)
-* [Block](#block)
-
-* [List](#list)
-    * [Append](#append)
-    * [Read](#read)
-    * [Remove](#remove)
-    * [Len](#len)
-
-* [If Statement](#if-statement)
-
-* [For loop](#for-loop)
-    * [Loop 100 times](#loop-100-times)
-    * [Break](#break)
- 
-* [Error handling](#error-handling)
-* [Assertions](#assertions)
-* [Import](#import)
-
-</td><td width=33% valign=top>
-
-* [Built-in Words](#built-in-words)
-    * [Dup](#dup)
-    * [Drop](#drop)
-    * [Over](#over)
-    * [Rot](#rot)
-    * [Swap](#swap)
-    * [Inc](#inc)
-    * [Dec](#dec)
-    * [Input](#input)
-    * [Exit](#exit)
-    * [PrintS](#prints)
-
-</td><td valign=top>
-
-* [Examples](#examples)
-    * [FizzBuzz](#fizzbuzz)
-    * [Factorial](#factorial)
-    * [Bubble Sort](#bubble-sort)
-    * [Fibonacci](#fibonacci)
-        
-</td></tr>
-</table>
-
-## Hello World
-```pascal
+## Hello World!
+```
 "Hello World!\n" print
 ```
-`print` will print the top element of the stack, then remove it.
+`print` print the element on top of the stack and remove it from the stack.
+
+## Built-in Words
+| name | stack | description |
+| ---- | --------- | ----------- |
+| `dup` | `a -- a a` | duplicate an element on top of the stack. |
+| `drop` | ` a --  ` | drops the top element of the stack. |
+| `swap` | `a b -- b a` | swap 2 elements on the top of the stack. |
+| `print` | `a -- ` | print the element on top of the stack and remove it from the stack. |
+| `println` | `a -- ` | `print` that has new line |
+| `rot` | ` a b c -- b c a ` | rotate the top three stack elements. |
+| `over` | ` a b -- a b a ` | duplicate the second value on the stack. |
+| `printS` | ` a b c -- a b c ` | print the stack values. |
+| `input` | ` -- <input value> ` | user input |
+| `exit` | ` -- ` | exit |
+
+## Arithmetic Operators
+```
+34 35 + println
+```
+push `34` and `35` to the stack.
+`+` plus two elements on the stack and push it back to the stack.
+`println` will print the top element on the stack.
 
 ## Comments
 ```python
 # comment...
 ```
 
-## Variables
-```pascal
-10 -> x
-
-x -> y
-
-y print
+## Data-types
 ```
-### Variable Scopes
-```crystal
+int      # 1 2 3 4
+string   # "Hello World!"
+bool     # true false
+list     # { 1 2 3 4 }
+error    # NameError...
+type     # int string bool list...
+```
+
+## Block
+```
+block Main do
+    "Hello World!" println
+end
+
+call Main
+```
+In T# a block is defined using the `block` keyword.
+Call a block using the `call` keyword.
+
+## Variables
+```
+"Hello World!" -> N
+N println
+```
+
+## Variable scope
+```
 10 -> N # Global variable
 
 block Main do
-    N print
-    100 -> A # `A` can only be used within the Main function.
+    N println
+    100 -> A # `A` can be only used in the Main block.
 
     if true do
-        A print
+        A println
     end
 
-    # `i` can only be used within the Main function.
+    # `i` can be only used in the Main block.
     0 for dup 2 < do -> i
-        i print
+        i println
         i inc
     end
 end
 
 call Main
 
-try
-    A print # error
-except NameError do
-    "`A` var error\n" print
-end
+N println
 
-try
-    i print # error
-except NameError do
-    "`i` var error\n" print
-end
+A println # error
+
+i println # error
 ```
 
-## Data types
-```python
-int # 12345
-string # "Hello World!"
-bool # true false
-list # { 1 2 3 4 5 }
-type # int string bool type
-error # NameError, StackIndexError...
+## If statements
 ```
-
-### Typeof
-```python
-"Hello World\n" typeof print
-```
-`typeof` push the type of the top element of the stack. The element that `typeof` used will be dropped.
-
-## Arithmetic
-```pascal
-34 35 + print
-
-100 40 - print
-
-200 5 / print
-
-10 2 * print
-```
-
-## Block
-```pascal
-block main do
-    "Hello World!\n" print
-end
-
-call main
-```
-
-`block` function in other languages.
-
-## List
-```python
-{ 1 2 3 4 5 6 7 8 9 10 } print
-```
-### Append
-```python
-{ 1 2 3 4 5 6 7 8 9 10 } 11 append
-```
-### Read
-```python
-{ 1 2 3 4 5 6 7 8 9 10 } 0 read print
-```
-### Replace
-```python
-{ 1 2 3 4 5 6 7 8 9 10 } "Hello World!" 0 replace print
-```
-### Remove
-```python
-{ 1 2 3 4 5 6 7 8 9 10 } 0 remove print
-```
-### Len
-```python
-{ 1 2 3 4 5 6 7 8 9 10 } len print
-```
-
-## If Statement
-```pascal
 if true do
-    "Hello World\n" print
-end
-```
-```pascal
-if false do
-    "Hello World\n" print
+    "Hello World!" println
+elif true do
+    "Hello World!" println
 else
-    "Hello John Doe\n" print
+    "Hello World!" println
 end
 ```
-```pascal
-if false do
-    "Hello World\n" print
-elif true
-    "Hello John Doe\n" print
-end
+
 ```
-```pascal
-if true false || do
-    "Hello World\n" print
-end
+2 2 == println
+2 3 != println
+2 3 < println
+3 2 > println
+2 3 <= println
+3 2 >= println
 ```
-```pascal
-if true true && do
-    "Hello World\n" print
-end
+
 ```
-```pascal
-2 2 == print
-2 3 != print
-2 3 < print
-3 2 > print
-2 3 <= print
-3 2 >= print
-```
-```pascal
 11 -> N
 
-if N { 20 30 11 42 28 91 } in do
-    "Hello World!\n" print
-end
+N { 20 30 11 42 28 91 } in
 ```
 
 ## For loop
-
-### Loop 100 times
-```pascal
-0 for dup 100 <=  do
-    dup print
-    inc
+```
+for true do
+     "Hello World!" println
 end
 ```
 
-### Break
-```pascal
-0 for dup 100 <= do
-    dup print
-    if dup 10 == do
-        break
-    end
+```
+0
+for dup 100 < do
+    dup println
+    1 +
 end
 ```
+The code above is a program that outputs from 1 to 100.<br>
+First, push `0` onto the stack.<br>
+`dup` duplicates the top element of the stack.<br>
+Now there are two `0` in the stack. ( 0  0 )<br>
+push `100` onto the stack ( 0  0  100 )<br>
+`<` pushes a `bool` type to the stack using the top and second element of the stack. 0 < 100.<br>
+The stack will look like this. ( 0  true )<br>
+`do` checks for `true` or `false`. If `true`, it will run the for statement.<br>
+The used `bool` type will be removed from the stack.<br>
+If it becomes `false`, the loop will stop.<br>
 
-write loop like other languages
 ```
-# T#                       |    // JavaScript
-0 for dup 100 < do -> i    |    var i = 0
-    i print                |    while (i < 100) {
-    i inc -> i             |       console.log(i);
-end                        |       i++;
-                           |    }
+0
+for dup 100 < do
+    -> i
+    i println
+    i 1 +
+end
 ```
+By the way, this is how I write the loop process.
+
+## List
+```
+{ 1 2 3 4 5 6 7 8 9 10 } println
+```
+
+### Append
+```
+{ 1 2 3 4 5 6 7 8 9 10 } 11 append
+
+# <list> <index> append
+```
+
+### Read
+```
+{ 1 2 3 4 5 6 7 8 9 10 } 0 read println
+
+# <list> <index> read
+```
+`read` は `string` にも使えます。
+
+### Replace
+```
+{ 1 2 3 4 5 6 7 8 9 10 } "Hello World!" 0 replace println
+
+# <list> <replace value> <index> replace
+```
+
+### Remove
+```
+{ 1 2 3 4 5 6 7 8 9 10 } 0 remove println
+
+# <list> <index> remove
+```
+
+### Len
+```
+{ 1 2 3 4 5 6 7 8 9 10 } len println
+
+# <list> len
+```
+You can also use `len` for `string`.
 
 ## Error handling
-
-`StackIndexError`
-`TypeError`
-`ImportError`
-`NameError`
-`AssertionError`
-`IndexError`
-```python
-try 
-    dup
+```
+try
+    println
 except StackIndexError do
-    "Error...\n" print
-except IndexError do
-    "Error...\n" print
-except NameError do
-    "Error...\n" print
+    # do something...
 end
 ```
 
-## Assertions
-```python
-false assert "assertion error..."
+`StackIndexError` When you try to use a value from the stack when there is nothing on the stack.<br>
+`TypeError` When the type is different.<br>
+`IndexError` When the indexes of arrays and strings are different.<br>
+`ImportError` When you try to import an invalid file.<br>
+`NameError` When you use a variable that does not exist.<br>
+`AssertionError` Assertion<br>
 
-# AssertionError:1:7: assertion error...
+## Assertion
+```
+false assert "assertion error message..."
 ```
 
 ## Import
-```python
+```
 import "main.tsp"
 ```
 
-## Built-in Words
+## Built in T#
+### tic tac toe game 
+<a href="https://github.com/Tsharp-lang/tictactoe"><img src="https://github-readme-stats.vercel.app/api/pin/?username=Tsharp-lang&repo=tictactoe"/></a>
 
-### Dup
-```pascal
-"Hello World" dup print print
-```
-`dup` duplicate element on top of the stack. ( a -- a a )
+## T# highlighter
+https://twitter.com/m0k1m0k1 created this!
 
-### Drop
-```pascal
-"Hello World" "T# Programming Language" drop print
-```
-`drop` drops the top element of the stack. ( a --  )
-
-### Rot
-```python
-1 2 3 rot print print print
-```
-`rot` rotate top three stack elements. ( a b c -- b c a )
-
-### Swap
-```pascal
-1 2 swap print print
-```
-`swap` swaps two values in stack. ( a b -- b a )
-
-### Over
-```python
-1 2 over print print print
-```
-`over` copy the element below the top of the stack. ( a b -- a b a )
-
-### Inc
-```python
-1 inc print
-```
-`inc` increment the top element of the stack
-
-### Dec
-```python
-10 dec print
-```
-`dec` decrement the top element of the stack
-
-### input
-```python
-input print
-```
-
-### Exit
-```python
-"Hello World\n"
-exit
-print
-```
-`exit` will exit the program.
-
-### PrintS
-```python
-1 2 "Hello World!\n"
-
-printS
-
-# stack length  
-#     ↓ 
-#    <3>  1 2 'Hello World' <- top
-```
-`printS` print all stack values. 'printS' won't drop stack value after print.
-
-## Examples
-### FizzBuzz
-```pascal
-1 
-for dup 100 <= do
-    if dup 15 % 0 == do
-        "FizzBuzz\n" print
-    elif dup 3 % 0 == do
-        "Fizz\n" print
-    elif dup 5 % 0 == do
-        "Buzz\n" print
-    else
-        dup print
-    end
-    inc
-end drop
-```
-
-### Factorial
-```pascal
-block Factorial do
-    -> n
-    1 -> x
-    for n 1 >= do
-        x n * -> x
-        n 1 - -> n
-    end
-    x
-end
-
-5
-call Factorial
-print
-```
-
-### Bubble Sort
-```factor
-{ 19 13 6 2 18 8 1 4 11 9 100 30 4 } -> arr arr print
-
-arr len -> length
-
-0 for dup length <= do
-    0 for dup length 1 - < do
-        dup -> j
-        j 1 + -> i
-        if arr j read arr i read > do
-            arr j read -> x
-            arr i read -> y
-            arr y j replace dup -> arr
-            x i replace -> arr
-        end 
-        inc
-    end drop
-    inc
-end drop
-
-arr print
-```
-
-### Fibonacci
-```pascal
-10000 -> n
-
-0 1 for over n < do
-  over print " \n" print
-  swap over +
-end
-drop drop
-
-"\n" print
-```
-
-
+https://marketplace.visualstudio.com/items?itemName=akamurasaki.tsharplanguage-color
