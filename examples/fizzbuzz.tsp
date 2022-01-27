@@ -2,11 +2,11 @@
 1 
 for dup 100 <= do
     if dup 15 % 0 == do
-        "FizzBuzz" print
+        "FizzBuzz\n" print
     elif dup 3 % 0 == do
-        "Fizz" print
+        "Fizz\n" print
     elif dup 5 % 0 == do
-        "Buzz" print
+        "Buzz\n" print
     else
         dup print
     end

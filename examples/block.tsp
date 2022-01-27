@@ -1,9 +1,9 @@
 block whiteblock do
-    "■ " puts
+    "■ " print
 end
 
 block blackblock do
-    "□ " puts
+    "□ " print
 end
 
 block natural do
@@ -17,13 +17,13 @@ block natural do
                 call blackblock
             end
         inc end drop
-        " " print
+        " \n" print
     inc end drop
 end
 
 call natural
 
-"" print
+"\n" print
 
 block horizonal do
     0 for dup 10 < do
@@ -36,13 +36,13 @@ block horizonal do
                 call blackblock
             end
         inc end drop
-        " " print
+        " \n" print
     inc end drop
 end
 
 call horizonal
 
-"" print
+"\n" print
 
 block vertical do
     0 for dup 10 < do
@@ -55,13 +55,13 @@ block vertical do
                 call blackblock
             end
         inc end drop
-        " " print
+        " \n" print
     inc end drop
 end
 
 call vertical
 
-"" print
+"\n" print
 
 block cross do
     0 for dup 10 < do
@@ -74,13 +74,13 @@ block cross do
                 call blackblock
             end
         inc end drop
-        " " print
+        " \n" print
     inc end drop
 end
 
 call cross
 
-"" print
+"\n" print
 
 block triangle do
     10 -> y
@@ -97,13 +97,13 @@ block triangle do
                 call blackblock
             end
         inc end drop
-        " " print
+        " \n" print
     inc end drop
 end
 
 call triangle
 
-"" print
+"\n" print
 
 block inversetriangle do
     10 -> y
@@ -120,7 +120,7 @@ block inversetriangle do
                 call whiteblock
             end
         inc end drop
-        " " print
+        " \n" print
     inc end drop
 end
 

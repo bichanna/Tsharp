@@ -14,13 +14,13 @@ end
         call dclone
         *
         if dup 10 < do
-            " " puts
+            " " print
         end
-        puts
-        " " puts
+        print
+        " " print
         inc
     end
-    "" print
+    "\n" print
     drop
     inc
 end
