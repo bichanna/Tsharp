@@ -19,6 +19,6 @@
     inc
 end drop
 
-print
+println
 
 

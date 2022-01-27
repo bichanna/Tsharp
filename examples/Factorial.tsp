@@ -7,5 +7,5 @@ for n 1 >= do
     n 1 - -> n
 end
 
-x print
+x println
 

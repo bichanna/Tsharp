@@ -9,4 +9,4 @@ block Fib do -> n
     end
 end
 
-10 call Fib print
+10 call Fib println

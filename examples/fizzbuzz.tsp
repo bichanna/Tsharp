@@ -8,7 +8,7 @@ for dup 100 <= do
     elif dup 5 % 0 == do
         "Buzz\n" print
     else
-        dup print
+        dup println
     end
     inc
 end drop

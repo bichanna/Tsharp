@@ -20,7 +20,7 @@ end
         " " print
         inc
     end
-    "\n" print
+    "" println
     drop
     inc
 end
