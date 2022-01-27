@@ -47,7 +47,7 @@ $ ./main.exe <filename>.tsp
 
 # Hello World
 ```pascal
-"Hello World" print
+"Hello World" println
 ```
 ```Crystal
 block main do
