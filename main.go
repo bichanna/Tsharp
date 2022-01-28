@@ -166,6 +166,7 @@ func (lexer *Lexer) Lex() (Position, Token, string, string) {
 					continue
 				} else if r == '=' {
 					r, _, err := lexer.reader.ReadRune()
+					lexer.pos.column++
 					if err != nil {
 						panic(err)
 					}
@@ -175,6 +176,7 @@ func (lexer *Lexer) Lex() (Position, Token, string, string) {
 					}
 				} else if r == '-' {
 					r, _, err := lexer.reader.ReadRune()
+					lexer.pos.column++
 					if err != nil {
 						if err == io.EOF {
 							return lexer.pos, TOKEN_MINUS, "-", lexer.FileName
@@ -189,6 +191,7 @@ func (lexer *Lexer) Lex() (Position, Token, string, string) {
 					}
 				} else if r == '<' {
 					r, _, err := lexer.reader.ReadRune()
+					lexer.pos.column++
 					if err != nil {
 						if err == io.EOF {
 							return lexer.pos, TOKEN_LESS_THAN, "<", lexer.FileName
@@ -203,6 +206,7 @@ func (lexer *Lexer) Lex() (Position, Token, string, string) {
 					}
 				} else if r == '|' {
 					r, _, err := lexer.reader.ReadRune()
+					lexer.pos.column++
 					if err != nil {
 						if err == io.EOF {
 							fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`.", lexer.pos.line, lexer.pos.column, string(r)))
@@ -222,6 +226,7 @@ func (lexer *Lexer) Lex() (Position, Token, string, string) {
 					}
 				} else if r == '&' {
 					r, _, err := lexer.reader.ReadRune()
+					lexer.pos.column++
 					if err != nil {
 						if err == io.EOF {
 							fmt.Println(fmt.Sprintf("SyntaxError:%d:%d: unexpected token value `%s`.", lexer.pos.line, lexer.pos.column, string(r)))
@@ -241,6 +246,7 @@ func (lexer *Lexer) Lex() (Position, Token, string, string) {
 					}
 				} else if r == '>' {
 					r, _, err := lexer.reader.ReadRune()
+					lexer.pos.column++
 					if err != nil {
 						if err == io.EOF {
 							return lexer.pos, TOKEN_GREATER_THAN, ">", lexer.FileName
@@ -256,6 +262,7 @@ func (lexer *Lexer) Lex() (Position, Token, string, string) {
 				} else if r == '!' {
 					r, _, err := lexer.reader.ReadRune()
 					if err != nil {panic(err)}
+					lexer.pos.column++
 					lexer.pos.column++
 					if r == '=' {
 						return lexer.pos, TOKEN_NOT_EQUALS, "!=", lexer.FileName
