@@ -33,7 +33,6 @@ $ ./main.exe examples/main.tsp
 | `println` | `a -- ` | `print` that has new line |
 | `rot` | ` a b c -- b c a ` | rotate the top three stack elements. |
 | `over` | ` a b -- a b a ` | duplicate the second value on the stack. |
-| `printS` | ` a b c -- a b c ` | print the stack values. |
 | `input` | ` -- <input value> ` | user input |
 | `exit` | ` -- ` | exit |
 
