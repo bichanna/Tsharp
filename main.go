@@ -9,6 +9,7 @@ import (
 	"reflect"
 	_"unsafe"
 	"strconv"
+	"time"
 	"github.com/fatih/color"
 )
 
@@ -176,7 +177,6 @@ func (lexer *Lexer) Lex() (Position, Token, string, string) {
 					}
 				} else if r == '-' {
 					r, _, err := lexer.reader.ReadRune()
-					lexer.pos.column++
 					if err != nil {
 						if err == io.EOF {
 							return lexer.pos, TOKEN_MINUS, "-", lexer.FileName
@@ -333,7 +333,7 @@ func (lexer *Lexer) Lex() (Position, Token, string, string) {
 						panic(err)
 					}
 					lexer := LexerInit(file, lexer.FileName)
-					fmt.Println(fmt.Sprintf("%s SyntaxError:%d:%d: unexpected token value `%s`.", lexer.FileName, lexer.pos.line, lexer.pos.column, string(r)))
+					fmt.Println(fmt.Sprintf("./%s:SyntaxError:%d:%d: unexpected token value `%s`.", lexer.FileName, lexer.pos.line, lexer.pos.column, string(r)))
 					lexer.PrintErrorLineAsString(line, col)
 					os.Exit(0)
 				}
@@ -470,6 +470,12 @@ type Error struct {
 // ------------ AST ------------
 // -----------------------------
 
+type NodePosition struct {
+	FileName string
+	Line int
+	Column int
+}
+
 type AsStr struct {
 	StringValue string
 }
@@ -502,6 +508,7 @@ func (node AsList) node() {}
 
 type AsId struct {
 	name string
+	Position NodePosition
 }
 
 func (node AsId) node() {}
@@ -522,6 +529,7 @@ func (node Assert) node() {}
 
 type Compare struct {
 	op uint8
+	Position NodePosition
 }
 
 func (node Compare) node() {}
@@ -534,6 +542,7 @@ func (node AsError) node() {}
 
 type AsBinop struct {
 	op uint8
+	Position NodePosition
 }
 
 func (node AsBinop) node() {}
@@ -552,12 +561,14 @@ func (node AsType) node() {}
 
 type Vardef struct {
 	Name string
+	Position NodePosition
 }
 
 func (node Vardef) node() {}
 
 type Var struct {
 	Name string
+	Position NodePosition
 }
 
 func (node Var) node() {}
@@ -571,6 +582,7 @@ func (node Blockdef) node() {}
 
 type CallBlock struct {
 	Name string
+	Position NodePosition
 }
 
 func (node CallBlock) node() {}
@@ -643,7 +655,7 @@ func (parser *Parser) ParserEat(token Token) {
 			panic(err)
 		}
 		lexer := LexerInit(file, parser.FileName)
-		fmt.Println(fmt.Sprintf("%s SyntaxError:%d:%d: unexpected token value `%s`.", parser.FileName, parser.line, parser.column, parser.current_token_value))
+		fmt.Println(fmt.Sprintf("./%s:SyntaxError:%d:%d: unexpected token value `%s`.", parser.FileName, parser.line, parser.column, parser.current_token_value))
 		lexer.PrintErrorLineAsString(line, col)
 		os.Exit(0)
 	}
@@ -661,6 +673,14 @@ func StrToInt(num string) int {
 		panic(err)
 	}
 	return i
+}
+
+func RetNodePosition(parser *Parser) NodePosition {
+	return NodePosition{
+		Line: parser.line,
+		Column: parser.column,
+		FileName: parser.FileName,
+	}
 }
 
 func ParserParseError(parser *Parser) AST {
@@ -718,7 +738,8 @@ func ParserParseExpr(parser *Parser) AST {
 			parser.ParserEat(TOKEN_R_BRACKET)
 		case TOKEN_ID:
 			expr = Var {
-				parser.current_token_value,
+				Name: parser.current_token_value,
+				Position: RetNodePosition(parser),
 			}
 			parser.ParserEat(TOKEN_ID)
 		case TOKEN_TYPE:
@@ -734,7 +755,7 @@ func ParserParseExpr(parser *Parser) AST {
 				panic(err)
 			}
 			lexer := LexerInit(file, parser.FileName)
-			fmt.Println(fmt.Sprintf("%s SyntaxError:%d:%d: unexpected token value `%s`.", parser.FileName, parser.line, parser.column, parser.current_token_value))
+			fmt.Println(fmt.Sprintf("./%s:SyntaxError:%d:%d: unexpected token value `%s`.", parser.FileName, parser.line, parser.column, parser.current_token_value))
 			lexer.PrintErrorLineAsString(line, col)
 			os.Exit(0)
 	}
@@ -752,16 +773,20 @@ func ParserParse(parser *Parser) AST {
 			panic(err)
 		}
 		lexer := LexerInit(file, parser.FileName)
-		fmt.Println(fmt.Sprintf("%s SyntaxError:%d:%d: the body is empty, unexpected token value `%s`.", parser.FileName, parser.line, parser.column, parser.current_token_value))
+		fmt.Println(fmt.Sprintf("./%s:SyntaxError:%d:%d: the body is empty, unexpected token value `%s`.", parser.FileName, parser.line, parser.column, parser.current_token_value))
 		lexer.PrintErrorLineAsString(line, col)
 		os.Exit(0)
 	}
 	for {
 		if parser.current_token_type == TOKEN_ID {
-			if parser.current_token_value == "print" || parser.current_token_value == "break" || parser.current_token_value == "append" || parser.current_token_value == "remove" || parser.current_token_value == "swap" || parser.current_token_value == "in" || parser.current_token_value == "typeof" || parser.current_token_value == "rot" || parser.current_token_value == "len" || parser.current_token_value == "input" ||
+			if parser.current_token_value == "print" || parser.current_token_value == "break" || parser.current_token_value == "append" || parser.current_token_value == "remove" || parser.current_token_value == "swap" || parser.current_token_value == "in" || parser.current_token_value == "typeof" || parser.current_token_value == "rot" || parser.current_token_value == "len" || parser.current_token_value == "input" || parser.current_token_value == "sleep" ||
 			   parser.current_token_value == "drop"  || parser.current_token_value == "dup" || parser.current_token_value == "inc" || parser.current_token_value == "dec" || parser.current_token_value == "replace" || parser.current_token_value == "read" || parser.current_token_value == "println" || parser.current_token_value == "over" || parser.current_token_value == "printS" || parser.current_token_value == "exit" {
 				name := parser.current_token_value
-				IdExpr := AsId{name}
+				position := RetNodePosition(parser)
+				IdExpr := AsId{
+					name,
+					position,
+				}
 				parser.ParserEat(TOKEN_ID)
 				Statements = append(Statements, IdExpr)
 			} else if parser.current_token_value == "assert" {
@@ -788,11 +813,13 @@ func ParserParse(parser *Parser) AST {
 				}
 				Statements = append(Statements, BlockdefExpr)
 			} else if parser.current_token_value == "call" {
+				position := RetNodePosition(parser)
 				parser.ParserEat(TOKEN_ID)
 				name := parser.current_token_value
 				parser.ParserEat(TOKEN_ID)
 				CallBlockExpr := CallBlock {
 					name,
+					position,
 				}
 				Statements = append(Statements, CallBlockExpr)
 			} else if parser.current_token_value == "import" {
@@ -886,21 +913,25 @@ func ParserParse(parser *Parser) AST {
 			}
 			Statements = append(Statements, PushExpr)
 		} else if parser.current_token_type == TOKEN_EQUALS {
+			position := RetNodePosition(parser)
 			parser.ParserEat(TOKEN_EQUALS)
 			VardefExpr := Vardef {
 				Name: parser.current_token_value,
+				Position: position,
 			}
 			parser.ParserEat(TOKEN_ID)
 			Statements = append(Statements, VardefExpr)
 		} else if parser.current_token_type == TOKEN_PLUS || parser.current_token_type == TOKEN_MINUS || parser.current_token_type == TOKEN_MUL || parser.current_token_type == TOKEN_DIV || parser.current_token_type == TOKEN_REM {
 			BinopExpr := AsBinop {
 				op: uint8(parser.current_token_type),
+				Position: RetNodePosition(parser),
 			}
 			parser.ParserEat(parser.current_token_type)
 			Statements = append(Statements, BinopExpr)
 		} else if parser.current_token_type == TOKEN_LESS_EQUALS || parser.current_token_type == TOKEN_GREATER_EQUALS || parser.current_token_type == TOKEN_LESS_THAN || parser.current_token_type == TOKEN_GREATER_THAN || parser.current_token_type == TOKEN_IS_EQUALS || parser.current_token_type == TOKEN_NOT_EQUALS || parser.current_token_type == TOKEN_OR || parser.current_token_type == TOKEN_AND {
 			CompareExpr := Compare {
 				op: uint8(parser.current_token_type),
+				Position: RetNodePosition(parser),
 			}
 			parser.ParserEat(parser.current_token_type)
 			Statements = append(Statements, CompareExpr)
@@ -916,7 +947,7 @@ func ParserParse(parser *Parser) AST {
 				panic(err)
 			}
 			lexer := LexerInit(file, parser.FileName)
-			fmt.Println(fmt.Sprintf("%s SyntaxError:%d:%d: unexpected token value `%s`.", parser.FileName, parser.line, parser.column, parser.current_token_value))
+			fmt.Println(fmt.Sprintf("./%s:SyntaxError:%d:%d: unexpected token value `%s`.", parser.FileName, parser.line, parser.column, parser.current_token_value))
 			lexer.PrintErrorLineAsString(line, col)
 			os.Exit(0)
 		}
@@ -942,6 +973,7 @@ func InitScope() *Scope {
 	}
 }
 
+// TODO: rewrite
 func (scope *Scope) OpPush(node AST, VariableScope *map[string]AST) (*Error) {
 	_, IsList := node.(NewList);
 	_, IsVar := node.(Var);
@@ -950,33 +982,26 @@ func (scope *Scope) OpPush(node AST, VariableScope *map[string]AST) (*Error) {
 		if node.(NewList).ListBody != nil {
 			ListScope.VisitorVisit(node.(NewList).ListBody, false, VariableScope)
 		}
-		var expr AST = AsList {
-			ListScope.Stack,
-		}
-		scope.Stack = append(scope.Stack, expr)
+		scope.Stack = append(scope.Stack, AsList{ListScope.Stack})
 	} else if IsVar {
 		if VariableScope == nil {
 			if _, ok := Variables[node.(Var).Name]; ok {
-				VarValue := Variables[node.(Var).Name]
-				scope.Stack = append(scope.Stack, VarValue)
+				scope.Stack = append(scope.Stack, Variables[node.(Var).Name])
 			} else {
 				err := Error{}
-				err.message = fmt.Sprintf("NameError: undefined variable `%s`", node.(Var).Name)
+				err.message = fmt.Sprintf("./%s:NameError:%d:%d: undefined variable `%s`", node.(Var).Position.FileName, node.(Var).Position.Line, node.(Var).Position.Column,node.(Var).Name)
 				err.Type = NameError
 				return &err
 			}
 		} else {
-			VariablesScope := *VariableScope
-			if _, ok := VariablesScope[node.(Var).Name]; ok {
-				VarValue := VariablesScope[node.(Var).Name]
-				scope.Stack = append(scope.Stack, VarValue)
+			if _, ok := (*VariableScope)[node.(Var).Name]; ok {
+				scope.Stack = append(scope.Stack, (*VariableScope)[node.(Var).Name])
 			} else {
 				if _, ok := Variables[node.(Var).Name]; ok {
-					VarValue := Variables[node.(Var).Name]
-					scope.Stack = append(scope.Stack, VarValue)
+					scope.Stack = append(scope.Stack, Variables[node.(Var).Name])
 				} else {
 					err := Error{}
-					err.message = fmt.Sprintf("NameError: undefined variable `%s`", node.(Var).Name)
+					err.message = fmt.Sprintf("./%s:NameError:%d:%d: undefined variable `%s`", node.(Var).Position.FileName, node.(Var).Position.Line, node.(Var).Position.Column,node.(Var).Name)
 					err.Type = NameError
 					return &err
 				}
@@ -988,10 +1013,10 @@ func (scope *Scope) OpPush(node AST, VariableScope *map[string]AST) (*Error) {
 	return nil
 }
 
-func (scope *Scope) OpDrop() (*Error) {
+func (scope *Scope) OpDrop(node AST) (*Error) {
 	if len(scope.Stack) < 1 {
 		err := Error{}
-		err.message = "StackIndexError: `drop` expected one or more element in the stack."
+		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `drop` expected one or more element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
 		err.Type = StackIndexError
 		return &err
 	}
@@ -999,17 +1024,16 @@ func (scope *Scope) OpDrop() (*Error) {
 	return nil
 }
 
-func (scope *Scope) OpSwap() (*Error) {
+func (scope *Scope) OpSwap(node AST) (*Error) {
 	if len(scope.Stack) < 2 {
 		err := Error{}
-		err.message = "StackIndexError: `swap` expected two or more element in the stack."
+		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `swap` expected two or more element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
 		err.Type = StackIndexError
 		return &err
 	}
 	first := scope.Stack[len(scope.Stack)-1]
 	second := scope.Stack[len(scope.Stack)-2]
-	scope.OpDrop()
-	scope.OpDrop()
+	scope.Stack = scope.Stack[:len(scope.Stack)-2]
 	scope.OpPush(first, nil)
 	scope.OpPush(second, nil)
 	return nil
@@ -1019,17 +1043,16 @@ func RetTokenAsStr(token uint8) string {
 	return tokens[token]
 }
 
-func (scope *Scope) OpBinop(op uint8) (*Error) {
+func (scope *Scope) OpBinop(op uint8, position NodePosition) (*Error) {
 	if len(scope.Stack) < 2 {
 		err := Error{}
-		err.message = fmt.Sprintf("StackIndexError: `%s` expected more than 2 <int> type elements in the stack.", RetTokenAsStr(op))
+		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `%s` expected more than 2 <int> type elements in the stack.", position.FileName, position.Line, position.Column, RetTokenAsStr(op))
 		err.Type = StackIndexError
 		return &err
 	}
 	first := scope.Stack[len(scope.Stack)-1]
 	second := scope.Stack[len(scope.Stack)-2]
-	scope.OpDrop()
-	scope.OpDrop()
+	scope.Stack = scope.Stack[:len(scope.Stack)-2]
 	_, ok := first.(AsInt);
 	_, ok2 := second.(AsInt);
 
@@ -1047,7 +1070,7 @@ func (scope *Scope) OpBinop(op uint8) (*Error) {
 
 	if !ok || !ok2 {
 		err := Error{}
-		err.message = fmt.Sprintf("StackIndexError: `%s` expected 2 <int> type or 2 <string> type elements in the stack.", RetTokenAsStr(op))
+		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `%s` expected 2 <int> type or 2 <string> type elements in the stack.", position.FileName, position.Line, position.Column, RetTokenAsStr(op))
 		err.Type = TypeError
 		return &err
 	}
@@ -1066,10 +1089,10 @@ func (scope *Scope) OpBinop(op uint8) (*Error) {
 	return nil
 }
 
-func (scope *Scope) OpCompare(op uint8) (*Error) {
+func (scope *Scope) OpCompare(op uint8, position NodePosition) (*Error) {
 	if len(scope.Stack) < 2 {
 		err := Error{}
-		err.message = fmt.Sprintf("StackIndexError: `%s` expected more than 2 elements in the stack.", RetTokenAsStr(op))
+		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `%s` expected more than 2 elements in the stack.", position.FileName, position.Line, position.Column, RetTokenAsStr(op))
 		err.Type = StackIndexError
 		return &err
 	}
@@ -1107,7 +1130,7 @@ func (scope *Scope) OpCompare(op uint8) (*Error) {
 		_, ok2 := second.(AsBool);
 		if !ok || !ok2 {
 			err := Error{}
-			err.message = fmt.Sprintf("StackIndexError: `%s` expected 2 <bool> type elements in the stack.", RetTokenAsStr(op))
+			err.message = fmt.Sprintf("./%s:TypeError:%d:%d: `%s` expected 2 <bool> type elements in the stack.", position.FileName, position.Line, position.Column, RetTokenAsStr(op))
 			err.Type = TypeError
 			return &err
 		}
@@ -1120,7 +1143,7 @@ func (scope *Scope) OpCompare(op uint8) (*Error) {
 		_, ok2 := second.(AsInt);
 		if !ok || !ok2 {
 			err := Error{}
-			err.message = fmt.Sprintf("StackIndexError: `%s` expected 2 <int> type elements in the stack.", RetTokenAsStr(op))
+			err.message = fmt.Sprintf("./%s:TypeError:%d:%d: `%s` expected 2 <int> type elements in the stack.", position.FileName, position.Line, position.Column, RetTokenAsStr(op))
 			err.Type = TypeError
 			return &err
 		}
@@ -1131,8 +1154,7 @@ func (scope *Scope) OpCompare(op uint8) (*Error) {
 			case TOKEN_GREATER_EQUALS: val = second.(AsInt).IntValue >= first.(AsInt).IntValue
 		}
 	}
-	scope.OpDrop()
-	scope.OpDrop()
+	scope.Stack = scope.Stack[:len(scope.Stack)-2]
 	expr := AsBool {
 		val,
 	}
@@ -1160,10 +1182,10 @@ func PrintAsList(node AST) {
 	print("}")
 }
 
-func (scope *Scope) OpPrintln() (*Error) {
+func (scope *Scope) OpPrintln(node AST) (*Error) {
 	if len(scope.Stack) < 1 {
 		err := Error{}
-		err.message = "StackIndexError: `println` the stack is empty."
+		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `println` the stack is empty.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
 		err.Type = StackIndexError
 		return &err
 	}
@@ -1186,14 +1208,14 @@ func (scope *Scope) OpPrintln() (*Error) {
 			PrintAsList(expr)
 			fmt.Println()
 	}
-	scope.OpDrop()
+	scope.Stack = scope.Stack[:len(scope.Stack)-1]
 	return nil
 }
 
-func (scope *Scope) OpPrint() (*Error) {
+func (scope *Scope) OpPrint(node AST) (*Error) {
 	if len(scope.Stack) < 1 {
 		err := Error{}
-		err.message = "StackIndexError: `print` the stack is empty."
+		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `print` the stack is empty.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
 		err.Type = StackIndexError
 		return &err
 	}
@@ -1215,33 +1237,8 @@ func (scope *Scope) OpPrint() (*Error) {
 		case AsList:
 			PrintAsList(expr)
 	}
-	scope.OpDrop()
+	scope.Stack = scope.Stack[:len(scope.Stack)-1]
 	return nil
-}
-
-func (scope *Scope) OpPrintS() {
-	fmt.Print(fmt.Sprintf("<%d> ", len(scope.Stack)))
-	for i:=len(scope.Stack); i > 0; i-- {
-		expr := scope.Stack[len(scope.Stack)-i]
-		switch expr.(type) {
-			case AsStr: fmt.Print(expr.(AsStr).StringValue)
-			case AsInt: fmt.Print(expr.(AsInt).IntValue)
-			case AsBool: fmt.Print(expr.(AsBool).BoolValue)
-			case AsType: fmt.Print(fmt.Sprintf("<%s>" ,expr.(AsType).TypeValue))
-			case AsError:
-				switch expr.(AsError).err {
-					case NameError: fmt.Print("<error 'NameError'>")
-					case StackIndexError: fmt.Print("<error 'StackIndexError'>")
-					case ImportError: fmt.Print("<error 'ImportError'>")
-					case IndexError: fmt.Print("<error 'IndexError'>")
-					case TypeError: fmt.Print("<error 'TypeError'>")
-					default: fmt.Print(fmt.Sprintf("unexpected error <%d>", expr.(AsError).err))
-				}
-			case AsList:
-				PrintAsList(expr)
-		}
-		print(" ")
-	}
 }
 
 func (scope *Scope) OpIf(node AST, IsTry bool, VariableScope *map[string]AST) (bool, *Error) {
@@ -1261,7 +1258,7 @@ func (scope *Scope) OpIf(node AST, IsTry bool, VariableScope *map[string]AST) (b
 		err.Type = StackIndexError
 		return BreakValue, &err
 	}
-	scope.OpDrop()
+	scope.Stack = scope.Stack[:len(scope.Stack)-1]
 	if expr.(AsBool).BoolValue {
 		BreakValue, err, _ = scope.VisitorVisit(node.(If).IfBody, IsTry, VariableScope)
 		if err != nil {
@@ -1284,7 +1281,7 @@ func (scope *Scope) OpIf(node AST, IsTry bool, VariableScope *map[string]AST) (b
 			err.Type = StackIndexError
 			return BreakValue, &err
 		}
-		scope.OpDrop()
+		scope.Stack = scope.Stack[:len(scope.Stack)-1]
 		if expr.(AsBool).BoolValue {
 			BreakValue, err, _ = scope.VisitorVisit(node.(If).ElifBodys[i], IsTry, VariableScope)
 			return BreakValue, err
@@ -1316,7 +1313,7 @@ func (scope *Scope) OpFor(node AST, IsTry bool, VariableScope *map[string]AST) (
 			err.Type = StackIndexError
 			return &err
 		}
-		scope.OpDrop()
+		scope.Stack = scope.Stack[:len(scope.Stack)-1]
 		if !expr.(AsBool).BoolValue {
 			return nil
 		}
@@ -1332,7 +1329,7 @@ func (scope *Scope) OpFor(node AST, IsTry bool, VariableScope *map[string]AST) (
 }
 
 func (scope *Scope) OpTry(node AST, VariableScope *map[string]AST) (*Error) {
-	_, err, _ := scope.VisitorVisit(node.(Try).TryBody, true, nil)
+	_, err, _ := scope.VisitorVisit(node.(Try).TryBody, true, VariableScope)
 	if err != nil {
 		for i := 0; i < len(node.(Try).ExceptErrors); i++ {
 			if node.(Try).ExceptErrors[i].(AsError).err == err.Type {
@@ -1344,10 +1341,10 @@ func (scope *Scope) OpTry(node AST, VariableScope *map[string]AST) (*Error) {
 	return err
 }
 
-func (scope *Scope) OpInc() (*Error) {
+func (scope *Scope) OpInc(node AST) (*Error) {
 	if len(scope.Stack) < 1 {
 		err := Error{}
-		err.message = "StackIndexError: `inc` expected one or more <int> type element in the stack."
+		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `inc` expected one or more <int> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
 		err.Type = StackIndexError
 		return &err
 	}
@@ -1355,11 +1352,11 @@ func (scope *Scope) OpInc() (*Error) {
 	_, ok := first.(AsInt);
 	if !ok {
 		err := Error{}
-		err.message = "StackIndexError: `inc` expected one or more <int> type element in the stack."
+		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `inc` expected one or more <int> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
 		err.Type = StackIndexError
 		return &err
 	}
-	scope.OpDrop()
+	scope.Stack = scope.Stack[:len(scope.Stack)-1]
 	val := first.(AsInt).IntValue + 1
 	expr := AsInt {
 		val,
@@ -1368,10 +1365,10 @@ func (scope *Scope) OpInc() (*Error) {
 	return nil
 }
 
-func (scope *Scope) OpDec() (*Error) {
+func (scope *Scope) OpDec(node AST) (*Error) {
 	if len(scope.Stack) < 1 {
 		err := Error{}
-		err.message = "StackIndexError: `dec` expected one or more <int> type element in the stack."
+		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `dec` expected one or more <int> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
 		err.Type = StackIndexError
 		return &err
 	}
@@ -1379,11 +1376,11 @@ func (scope *Scope) OpDec() (*Error) {
 	_, ok := first.(AsInt);
 	if !ok {
 		err := Error{}
-		err.message = "StackIndexError: `dec` expected one or more <int> type element in the stack."
+		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `dec` expected one or more <int> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
 		err.Type = StackIndexError
 		return &err
 	}
-	scope.OpDrop()
+	scope.Stack = scope.Stack[:len(scope.Stack)-1]
 	val := first.(AsInt).IntValue - 1
 	expr := AsInt {
 		val,
@@ -1392,10 +1389,10 @@ func (scope *Scope) OpDec() (*Error) {
 	return nil
 }
 
-func (scope *Scope) OpDup() (*Error) {
+func (scope *Scope) OpDup(node AST) (*Error) {
 	if len(scope.Stack) < 1 {
 		err := Error{}
-		err.message = "StackIndexError: `dup` expected one or more <int> type element in the stack."
+		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `dup` expected one or more <int> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
 		err.Type = StackIndexError
 		return &err
 	}
@@ -1404,22 +1401,21 @@ func (scope *Scope) OpDup() (*Error) {
 	return nil
 }
 
-func (scope *Scope) OpAppend() (*Error) {
+func (scope *Scope) OpAppend(node AST) (*Error) {
 	if len(scope.Stack) < 2 {
 		err := Error{}
-		err.message = "StackIndexError: `append` expected two or more element in the stack."
+		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `append` expected two or more element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
 		err.Type = StackIndexError
 		return &err
 	}
 	if _, ok := scope.Stack[len(scope.Stack)-2].(AsList); !ok {
 		err := Error{}
-		err.message = "TypeError: `append` expected <list> type element in the stack."
+		err.message = fmt.Sprintf("./%s:TypeError:%d:%d: `append` expected <list> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
 		err.Type = TypeError
 		return &err
 	}
 	a := append(scope.Stack[len(scope.Stack)-2].(AsList).ListArgs, scope.Stack[len(scope.Stack)-1])
-	scope.OpDrop()
-	scope.OpDrop()
+	scope.Stack = scope.Stack[:len(scope.Stack)-2]
 	var NewList AST = AsList {
 		a,
 	}
@@ -1427,10 +1423,10 @@ func (scope *Scope) OpAppend() (*Error) {
 	return nil
 }
 
-func (scope *Scope) OpRead() (*Error) {
+func (scope *Scope) OpRead(node AST) (*Error) {
 	if len(scope.Stack) < 2 {
 		err := Error{}
-		err.message = "StackIndexError: `read` expected two or more element in the stack."
+		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `read` expected two or more element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
 		err.Type = StackIndexError
 		return &err
 	}
@@ -1438,7 +1434,7 @@ func (scope *Scope) OpRead() (*Error) {
 	visitedIndex := scope.Stack[len(scope.Stack)-1]
 	if _, ok := visitedIndex.(AsInt); !ok {
 		err := Error{}
-		err.message = "TypeError: `read` index expected <int> type element in the stack."
+		err.message = fmt.Sprintf("./%s:TypeError:%d:%d: `read` index expected <int> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
 		err.Type = TypeError
 		return &err
 	}
@@ -1446,16 +1442,15 @@ func (scope *Scope) OpRead() (*Error) {
 	_, ok2 := visitedList.(AsList);
 	if !ok && !ok2 {
 		err := Error{}
-		err.message = "TypeError: `read` expected <list> or <string> type element in the stack."
+		err.message = fmt.Sprintf("./%s:TypeError:%d:%d: `read` expected <list> or <string> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
 		err.Type = TypeError
 		return &err
 	}
-	scope.OpDrop()
-	scope.OpDrop()
+	scope.Stack = scope.Stack[:len(scope.Stack)-2]
 	if _, ok := visitedList.(AsList); ok {
 		if len(visitedList.(AsList).ListArgs) <= visitedIndex.(AsInt).IntValue {
 			err := Error{}
-			err.message = "IndexError: `read` type <list> element index out of range."
+			err.message = fmt.Sprintf("./%s:IndexError:%d:%d: `read` type <list> element index out of range.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
 			err.Type = IndexError
 			return &err
 		}
@@ -1463,7 +1458,7 @@ func (scope *Scope) OpRead() (*Error) {
 	} else {
 		if len(visitedList.(AsStr).StringValue) <= visitedIndex.(AsInt).IntValue {
 			err := Error{}
-			err.message = "IndexError: `read` type <string> element index out of range."
+			err.message = fmt.Sprintf("./%s:IndexError:%d:%d: `read` type <string> element index out of range.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
 			err.Type = IndexError
 			return &err
 		}
@@ -1476,10 +1471,10 @@ func (scope *Scope) OpRead() (*Error) {
 	return nil
 }
 
-func (scope *Scope) OpReplace() (*Error) {
+func (scope *Scope) OpReplace(node AST) (*Error) {
 	if len(scope.Stack) < 3 {
 		err := Error{}
-		err.message = "StackIndexError: `replace` expected three or more element in the stack."
+		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `replace` expected three or more element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
 		err.Type = StackIndexError
 		return &err
 	}
@@ -1488,34 +1483,32 @@ func (scope *Scope) OpReplace() (*Error) {
 	visitedIndex := scope.Stack[len(scope.Stack)-1]
 	if _, ok := visitedIndex.(AsInt); !ok {
 		err := Error{}
-		err.message = "TypeError: `replace` index expected <int> type element in the stack."
+		err.message = fmt.Sprintf("./%s:TypeError:%d:%d: `replace` index expected <int> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
 		err.Type = TypeError
 		return &err
 	}
 	if _, ok := visitedList.(AsList); !ok {
 		err := Error{}
-		err.message = "TypeError: `replace` expected <list> type element in the stack."
+		err.message = fmt.Sprintf("./%s:TypeError:%d:%d: `replace` expected <list> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
 		err.Type = TypeError
 		return &err
 	}
 	if len(visitedList.(AsList).ListArgs) <= visitedIndex.(AsInt).IntValue {
 		err := Error{}
-		err.message = "IndexError: `replace` type <list> element index out of range."
+		err.message = fmt.Sprintf("./%s:IndexError:%d:%d: `replace` type <list> element index out of range.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
 		err.Type = IndexError
 		return &err
 	}
 	visitedList.(AsList).ListArgs[int(visitedIndex.(AsInt).IntValue)] = visitedValue
-	scope.OpDrop()
-	scope.OpDrop()
-	scope.OpDrop()
+	scope.Stack = scope.Stack[:len(scope.Stack)-3]
 	scope.OpPush(visitedList, nil)
 	return nil
 }
 
-func (scope *Scope) OpRemove() (*Error) {
+func (scope *Scope) OpRemove(node AST) (*Error) {
 	if len(scope.Stack) < 2 {
 		err := Error{}
-		err.message = "StackIndexError: `remove` expected two or more element in the stack."
+		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `remove` expected two or more element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
 		err.Type = StackIndexError
 		return &err
 	}
@@ -1523,19 +1516,19 @@ func (scope *Scope) OpRemove() (*Error) {
 	visitedIndex := scope.Stack[len(scope.Stack)-1]
 	if _, ok := visitedIndex.(AsInt); !ok {
 		err := Error{}
-		err.message = "TypeError: `remove` index expected <int> type element in the stack."
+		err.message = fmt.Sprintf("./%s:TypeError:%d:%d: `remove` index expected <int> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
 		err.Type = TypeError
 		return &err
 	}
 	if _, ok := visitedList.(AsList); !ok {
 		err := Error{}
-		err.message = "TypeError: `remove` expected <list> type element in the stack."
+		err.message = fmt.Sprintf("./%s:TypeError:%d:%d: `remove` expected <list> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
 		err.Type = TypeError
 		return &err
 	}
 	if len(visitedList.(AsList).ListArgs) <= visitedIndex.(AsInt).IntValue {
 		err := Error{}
-		err.message = "IndexError: `remove` type <list> element index out of range."
+		err.message = fmt.Sprintf("./%s:IndexError:%d:%d: `remove` type <list> element index out of range.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
 		err.Type = IndexError
 		return &err
 	}
@@ -1545,26 +1538,24 @@ func (scope *Scope) OpRemove() (*Error) {
 		NewList,
 	}
 	visitedList = nil
-	scope.OpDrop()
-	scope.OpDrop()
+	scope.Stack = scope.Stack[:len(scope.Stack)-2]
 	scope.OpPush(ListExpr, nil)
 	return nil
 }
 
-func (scope *Scope) OpIn() (*Error) {
+func (scope *Scope) OpIn(node AST) (*Error) {
 	if len(scope.Stack) < 2 {
 		err := Error{}
-		err.message = "StackIndexError: `in` expected two or more element in the stack."
+		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `in` expected two or more element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
 		err.Type = StackIndexError
 		return &err
 	}
 	visitedVal := scope.Stack[len(scope.Stack)-2]
 	visitedList := scope.Stack[len(scope.Stack)-1]
-	scope.OpDrop()
-	scope.OpDrop()
+	scope.Stack = scope.Stack[:len(scope.Stack)-2]
 	if _, ok := visitedList.(AsList); !ok {
 		err := Error{}
-		err.message = "TypeError: `in` expected <list> type element in the stack."
+		err.message = fmt.Sprintf("./%s:TypeError:%d:%d: `in` expected <list> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
 		err.Type = TypeError
 		return &err
 	}
@@ -1590,10 +1581,10 @@ func (scope *Scope) OpIn() (*Error) {
 	return nil
 }
 
-func (scope *Scope) OpLen() (*Error) {
+func (scope *Scope) OpLen(node AST) (*Error) {
 	if len(scope.Stack) < 1 {
 		err := Error{}
-		err.message = "StackIndexError: `len` expected one or more element in the stack."
+		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `len` expected one or more element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
 		err.Type = StackIndexError
 		return &err
 	}
@@ -1602,7 +1593,7 @@ func (scope *Scope) OpLen() (*Error) {
 	_, ok2 := visitedExpr.(AsStr);
 	if !ok && !ok2 {
 		err := Error{}
-		err.message = "TypeError: `len` expected <list> or <string> type element in the stack."
+		err.message = fmt.Sprintf("./%s:TypeError:%d:%d: `len` expected <list> or <string> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
 		err.Type = TypeError
 		return &err
 	}
@@ -1612,15 +1603,15 @@ func (scope *Scope) OpLen() (*Error) {
 	} else {
 		IntExpr.IntValue = len(visitedExpr.(AsStr).StringValue)
 	}
-	scope.OpDrop()
+	scope.Stack = scope.Stack[:len(scope.Stack)-1]
 	scope.OpPush(IntExpr, nil)
 	return nil
 }
 
-func (scope *Scope) OpTypeOf() (*Error) {
+func (scope *Scope) OpTypeOf(node AST) (*Error) {
 	if len(scope.Stack) < 1 {
 		err := Error{}
-		err.message = "StackIndexError: `typeof` expected one or more element in the stack."
+		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `typeof` expected one or more element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
 		err.Type = StackIndexError
 		return &err
 	}
@@ -1637,34 +1628,32 @@ func (scope *Scope) OpTypeOf() (*Error) {
 	expr := AsType {
 		TypeVal,
 	}
-	scope.OpDrop()
+	scope.Stack = scope.Stack[:len(scope.Stack)-1]
 	scope.OpPush(expr, nil)
 	return nil
 }
 
-func (scope *Scope) OpRot() (*Error) {
+func (scope *Scope) OpRot(node AST) (*Error) {
 	if len(scope.Stack) < 3 {
 		err := Error{}
-		err.message = "StackIndexError: `rot` expected more than three elements in the stack."
+		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `rot` expected more than three elements in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
 		err.Type = StackIndexError
 		return &err
 	}
 	visitedExpr := scope.Stack[len(scope.Stack)-1]
 	visitedExprSecond := scope.Stack[len(scope.Stack)-2]
 	visitedExprThird := scope.Stack[len(scope.Stack)-3]
-	scope.OpDrop()
-	scope.OpDrop()
-	scope.OpDrop()
+	scope.Stack = scope.Stack[:len(scope.Stack)-3]
 	scope.OpPush(visitedExprSecond, nil)
 	scope.OpPush(visitedExpr, nil)
 	scope.OpPush(visitedExprThird, nil)
 	return nil
 }
 
-func (scope *Scope) OpOver() (*Error) {
+func (scope *Scope) OpOver(node AST) (*Error) {
 	if len(scope.Stack) < 2 {
 		err := Error{}
-		err.message = "StackIndexError: `over` expected more than two elements in the stack."
+		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `over` expected more than two elements in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
 		err.Type = StackIndexError
 		return &err
 	}
@@ -1672,27 +1661,27 @@ func (scope *Scope) OpOver() (*Error) {
 	return nil
 }
 
-func (scope *Scope) OpVardef(name string, VariableScope *map[string]AST) (*Error) {
+func (scope *Scope) OpVardef(name string, position NodePosition, VariableScope *map[string]AST) (*Error) {
 	if len(scope.Stack) < 1 {
 		err := Error{}
-		err.message = fmt.Sprintf("StackIndexError: variable `%s` definiton expected one or more element in the stack.", name)
+		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: variable `%s` definiton expected one or more element in the stack.", position.FileName, position.Line, position.Column, name)
 		err.Type = StackIndexError
 		return &err
 	}
 	if VariableScope == nil {
 		VarValue := scope.Stack[len(scope.Stack)-1]
 		Variables[name] = VarValue
-		scope.OpDrop()
+		scope.Stack = scope.Stack[:len(scope.Stack)-1]
 	} else {
 		if _, ok := Variables[name]; ok {
 			VarValue := scope.Stack[len(scope.Stack)-1]
 			Variables[name] = VarValue
-			scope.OpDrop()
+			scope.Stack = scope.Stack[:len(scope.Stack)-1]
 		} else {
 			VariablesScope := *VariableScope
 			VarValue := scope.Stack[len(scope.Stack)-1]
 			VariablesScope[name] = VarValue
-			scope.OpDrop()
+			scope.Stack = scope.Stack[:len(scope.Stack)-1]
 		}
 	}
 	return nil
@@ -1709,10 +1698,10 @@ func (scope *Scope) OpBlockdef(node AST) (*Error) {
 	return nil
 }
 
-func (scope *Scope) OpCallBlock(name string) *Error {
+func (scope *Scope) OpCallBlock(name string, position NodePosition) *Error {
 	if _, ok := Blocks[name]; !ok {
 		err := Error{}
-		err.message = fmt.Sprintf("NameError: undefined block `%s`.", name)
+		err.message = fmt.Sprintf("./%s:NameError:%d:%d: undefined block `%s`.", position.FileName, position.Line, position.Column, name)
 		err.Type = NameError
 		return &err
 	}
@@ -1753,7 +1742,7 @@ func (scope *Scope) OpAssert(node AST) (*Error) {
 		err.Type = TypeError
 		return &err
 	}
-	scope.OpDrop()
+	scope.Stack = scope.Stack[:len(scope.Stack)-1]
 	if !BoolValue.(AsBool).BoolValue {
 		err := Error{}
 		err.message = fmt.Sprintf("AssertionError:%d:%d: %s", node.(Assert).Line, node.(Assert).Col, node.(Assert).Message)
@@ -1774,6 +1763,25 @@ func (scope *Scope) OpInput() {
 	scope.OpPush(StrExpr, nil)
 }
 
+func (scope *Scope) OpSleep(node AST) (*Error) {
+	if len(scope.Stack) < 1 {
+		err := Error{}
+		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `sleep` expected one or more element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = StackIndexError
+		return &err
+	}
+	IntValue := scope.Stack[len(scope.Stack)-1]
+	if _, ok := IntValue.(AsInt); !ok {
+		err := Error{}
+		err.message = fmt.Sprintf("./%s:TypeError:%d:%d: `sleep` expected <int> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = TypeError
+		return &err
+	}
+	scope.Stack = scope.Stack[:len(scope.Stack)-1]
+	time.Sleep(time.Duration(IntValue.(AsInt).IntValue) * time.Millisecond)
+	return nil
+}
+
 // -----------------------------
 // --------- Visitor -----------
 // -----------------------------
@@ -1788,40 +1796,40 @@ func (scope *Scope) VisitorVisit(node AST, IsTry bool, VariableScope *map[string
 				err = scope.OpPush(node.(AsPush).value, VariableScope)
 			case AsId:
 				switch node.(AsId).name {
-					case "println": err = scope.OpPrintln()
-					case "print": err = scope.OpPrint()
-					case "printS": scope.OpPrintS()
+					case "println": err = scope.OpPrintln(node)
+					case "print": err = scope.OpPrint(node)
 					case "break": BreakValue = true
-					case "drop": err = scope.OpDrop()
-					case "swap": err = scope.OpSwap()
-					case "inc": err = scope.OpInc()
-					case "dec": err = scope.OpDec()
-					case "dup": err = scope.OpDup()
-					case "append": err = scope.OpAppend()
-					case "read": err = scope.OpRead()
-					case "replace": err = scope.OpReplace()
-					case "remove": err = scope.OpRemove()
-					case "in": err = scope.OpIn()
-					case "len": err = scope.OpLen()
-					case "typeof": err = scope.OpTypeOf()
-					case "rot": err = scope.OpRot()
-					case "over": err = scope.OpOver()
+					case "drop": err = scope.OpDrop(node)
+					case "swap": err = scope.OpSwap(node)
+					case "inc": err = scope.OpInc(node)
+					case "dec": err = scope.OpDec(node)
+					case "dup": err = scope.OpDup(node)
+					case "append": err = scope.OpAppend(node)
+					case "read": err = scope.OpRead(node)
+					case "replace": err = scope.OpReplace(node)
+					case "remove": err = scope.OpRemove(node)
+					case "in": err = scope.OpIn(node)
+					case "len": err = scope.OpLen(node)
+					case "typeof": err = scope.OpTypeOf(node)
+					case "rot": err = scope.OpRot(node)
+					case "over": err = scope.OpOver(node)
 					case "exit": os.Exit(0)
 					case "input": scope.OpInput()
+					case "sleep": scope.OpSleep(node)
 					default: panic("unreachable")
 				}
 			case AsBinop:
-				err = scope.OpBinop(node.(AsBinop).op)
+				err = scope.OpBinop(node.(AsBinop).op, node.(AsBinop).Position)
 			case Vardef:
-				err = scope.OpVardef(node.(Vardef).Name, VariableScope)
+				err = scope.OpVardef(node.(Vardef).Name, node.(Vardef).Position, VariableScope)
 			case Blockdef:
 				err = scope.OpBlockdef(node)
 			case CallBlock:
-				err = scope.OpCallBlock(node.(CallBlock).Name)
+				err = scope.OpCallBlock(node.(CallBlock).Name, node.(CallBlock).Position)
 			case Import:
 				err = scope.OpImport(node.(Import).FileName)
 			case Compare:
-				err = scope.OpCompare(node.(Compare).op)
+				err = scope.OpCompare(node.(Compare).op, node.(Compare).Position)
 			case AsStatements:
 				scope.VisitorVisit(node.(AsStatements), IsTry, VariableScope)
 			case If:
