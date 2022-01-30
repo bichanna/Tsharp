@@ -1,5 +1,5 @@
 
-{ 19 13 6 2 18 8 1 4 11 9 100 30 4 } dup dup print -> arr
+{ 19 13 6 2 18 8 1 4 11 9 100 30 4 } dup dup println -> arr
 
 13 -> length
 
