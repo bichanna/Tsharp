@@ -1,5 +1,5 @@
-main
 *.exe
+main
 rewrite
 rewrite.go
 tsharp
@@ -9,3 +9,4 @@ tsharp2
 main.tsp
 v1
 v2
+backup.go
