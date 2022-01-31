@@ -515,13 +515,13 @@ func (node AsId) node() {}
 
 type Import struct {
 	FileName string
+	Position NodePosition
 }
 
 func (node Import) node() {}
 
 type Assert struct {
-	Line int
-	Col int
+	Position NodePosition
 	Message string
 }
 
@@ -589,8 +589,10 @@ func (node CallBlock) node() {}
 
 type If struct {
 	IfOp AST
+	Position NodePosition
 	IfBody AST
 	ElifOps []AST
+	ElifPositions []NodePosition
 	ElifBodys []AST
 	ElseBody AST
 }
@@ -599,6 +601,7 @@ func (node If) node() {}
 
 type For struct {
 	ForOp AST
+	Position NodePosition
 	ForBody AST
 }
 
@@ -790,12 +793,10 @@ func ParserParse(parser *Parser) AST {
 				parser.ParserEat(TOKEN_ID)
 				Statements = append(Statements, IdExpr)
 			} else if parser.current_token_value == "assert" {
-				Line := parser.line
-				Col := parser.column
+				position := RetNodePosition(parser)
 				parser.ParserEat(TOKEN_ID)
 				AssertExpr := Assert {
-					Line: Line,
-					Col: Col,
+					Position: position,
 					Message: parser.current_token_value,
 				}
 				parser.ParserEat(TOKEN_STRING)
@@ -826,23 +827,28 @@ func ParserParse(parser *Parser) AST {
 				parser.ParserEat(TOKEN_ID)
 				ImportExpr := Import {
 					parser.current_token_value,
+					RetNodePosition(parser),
 				}
 				parser.ParserEat(TOKEN_STRING)
 				Statements = append(Statements, ImportExpr)
 			} else if parser.current_token_value == "if" {
 				parser.ParserEat(TOKEN_ID)
+				position := RetNodePosition(parser)
 				IfOp := ParserParse(parser)
 				parser.ParserEat(TOKEN_DO)
 				IfBody := ParserParse(parser)
 				var ElifOps []AST
 				var ElifBodys []AST
+				var ElifPositions []NodePosition
 				for {
 					if parser.current_token_type != TOKEN_ELIF {
 						break
 					}
 					parser.ParserEat(TOKEN_ELIF)
+					ElifPosition := RetNodePosition(parser);
 					ElifOp := ParserParse(parser)
 					ElifOps = append(ElifOps, ElifOp)
+					ElifPositions = append(ElifPositions, ElifPosition)
 					parser.ParserEat(TOKEN_DO)
 					ElifBody := ParserParse(parser)
 					ElifBodys = append(ElifBodys, ElifBody)
@@ -858,20 +864,24 @@ func ParserParse(parser *Parser) AST {
 				parser.ParserEat(TOKEN_END)
 				IfExpr := If {
 					IfOp: IfOp,
+					Position: position,
 					IfBody: IfBody,
 					ElifOps: ElifOps,
+					ElifPositions: ElifPositions,
 					ElifBodys: ElifBodys,
 					ElseBody: ElseBody,
 				}
 				Statements = append(Statements, IfExpr)
 			} else if parser.current_token_value == "for" {
 				parser.ParserEat(TOKEN_ID)
+				position := RetNodePosition(parser);
 				ForOp := ParserParse(parser)
 				parser.ParserEat(TOKEN_DO)
 				ForBody := ParserParse(parser)
 				parser.ParserEat(TOKEN_END)
 				ForExpr := For {
 					ForOp: ForOp,
+					Position: position,
 					ForBody: ForBody,
 				}
 				Statements = append(Statements, ForExpr)
@@ -1247,14 +1257,14 @@ func (scope *Scope) OpIf(node AST, IsTry bool, VariableScope *map[string]AST) (b
 	var err *Error = nil
 	if len(scope.Stack) < 1 {
 		err := Error{}
-		err.message = "StackIndexError: if statement expected one or more <bool> type element in the stack."
+		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: if statement expected one or more <bool> type element in the stack.", node.(If).Position.FileName, node.(If).Position.Line, node.(If).Position.Column)
 		err.Type = StackIndexError
 		return BreakValue, &err
 	}
 	expr := scope.Stack[len(scope.Stack)-1]
 	if _, ok := expr.(AsBool); !ok {
 		err := Error{}
-		err.message = "TypeError: if statement expected one or more <bool> type element in the stack."
+		err.message = fmt.Sprintf("./%s:TypeError:%d:%d: if statement expected one or more <bool> type element in the stack.", node.(If).Position.FileName, node.(If).Position.Line, node.(If).Position.Column)
 		err.Type = StackIndexError
 		return BreakValue, &err
 	}
@@ -1270,14 +1280,14 @@ func (scope *Scope) OpIf(node AST, IsTry bool, VariableScope *map[string]AST) (b
 		scope.VisitorVisit(node.(If).ElifOps[i], IsTry, VariableScope)
 		if len(scope.Stack) < 1 {
 			err := Error{}
-			err.message = "StackIndexError: if statement expected one or more <bool> type element in the stack."
+			err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: if statement expected one or more <bool> type element in the stack.", node.(If).ElifPositions[i].FileName, node.(If).ElifPositions[i].Line, node.(If).ElifPositions[i].Column)
 			err.Type = StackIndexError
 			return BreakValue, &err
 		}
 		expr := scope.Stack[len(scope.Stack)-1]
 		if _, ok := expr.(AsBool); !ok {
 			err := Error{}
-			err.message = "TypeError: if statement expected one or more <bool> type element in the stack."
+			err.message = fmt.Sprintf("./%s:TypeError:%d:%d: if statement expected one or more <bool> type element in the stack.", node.(If).ElifPositions[i].FileName, node.(If).ElifPositions[i].Line, node.(If).ElifPositions[i].Column)
 			err.Type = StackIndexError
 			return BreakValue, &err
 		}
@@ -1302,15 +1312,15 @@ func (scope *Scope) OpFor(node AST, IsTry bool, VariableScope *map[string]AST) (
 		}
 		if len(scope.Stack) < 1 {
 			err := Error{}
-			err.message = "StackIndexError: for loop expected one or more <bool> type element in the stack."
+			err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: for loop expected one or more <bool> type element in the stack.", node.(For).Position.FileName, node.(For).Position.Line, node.(For).Position.Column)
 			err.Type = StackIndexError
 			return &err
 		}
 		expr := scope.Stack[len(scope.Stack)-1]
 		if _, ok := expr.(AsBool); !ok {
 			err := Error{}
-			err.message = "TypeError: for loop expected one or more <bool> type element in the stack."
-			err.Type = StackIndexError
+			err.message = fmt.Sprintf("./%s:TypeError:%d:%d: for loop expected one or more <bool> type element in the stack.", node.(For).Position.FileName, node.(For).Position.Line, node.(For).Position.Column)
+			err.Type = TypeError
 			return &err
 		}
 		scope.Stack = scope.Stack[:len(scope.Stack)-1]
@@ -1710,10 +1720,10 @@ func (scope *Scope) OpCallBlock(name string, position NodePosition) *Error {
 	return nil
 }
 
-func (scope *Scope) OpImport(FileName string) (*Error) {
+func (scope *Scope) OpImport(FileName string, position NodePosition) (*Error) {
 	if _, err := os.Stat(FileName); os.IsNotExist(err) {
 		err := Error{}
-		err.message = fmt.Sprintf("ImportError: invalid file name `%s`.", FileName)
+		err.message = fmt.Sprintf("./%s:ImportError:%d:%d: invalid file name `%s`.", position.FileName, position.Line, position.Column, FileName)
 		err.Type = ImportError
 		return &err
 	}
@@ -1731,21 +1741,21 @@ func (scope *Scope) OpImport(FileName string) (*Error) {
 func (scope *Scope) OpAssert(node AST) (*Error) {
 	if len(scope.Stack) < 1 {
 		err := Error{}
-		err.message = "StackIndexError: `assert` expected one or more <bool> type element in the stack."
+		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `assert` expected one or more <bool> type element in the stack.", node.(Assert).Position.FileName, node.(Assert).Position.Line, node.(Assert).Position.Column)
 		err.Type = StackIndexError
 		return &err
 	}
 	BoolValue := scope.Stack[len(scope.Stack)-1]
 	if _, ok := BoolValue.(AsBool); !ok {
 		err := Error{}
-		err.message = "TypeError: `assert` expected <bool> type element in the stack."
+		err.message = fmt.Sprintf("./%s:TypeError:%d:%d: `assert` expected <bool> type element in the stack.", node.(Assert).Position.FileName, node.(Assert).Position.Line, node.(Assert).Position.Column)
 		err.Type = TypeError
 		return &err
 	}
 	scope.Stack = scope.Stack[:len(scope.Stack)-1]
 	if !BoolValue.(AsBool).BoolValue {
 		err := Error{}
-		err.message = fmt.Sprintf("AssertionError:%d:%d: %s", node.(Assert).Line, node.(Assert).Col, node.(Assert).Message)
+		err.message = fmt.Sprintf("./%s:AssertionError:%d:%d: %s", node.(Assert).Position.FileName, node.(Assert).Position.Line, node.(Assert).Position.Column, node.(Assert).Message)
 		err.Type = AssertionError
 		return &err
 	}
@@ -1827,7 +1837,7 @@ func (scope *Scope) VisitorVisit(node AST, IsTry bool, VariableScope *map[string
 			case CallBlock:
 				err = scope.OpCallBlock(node.(CallBlock).Name, node.(CallBlock).Position)
 			case Import:
-				err = scope.OpImport(node.(Import).FileName)
+				err = scope.OpImport(node.(Import).FileName, node.(Import).Position)
 			case Compare:
 				err = scope.OpCompare(node.(Compare).op, node.(Compare).Position)
 			case AsStatements:
