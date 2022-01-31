@@ -14,59 +14,6 @@ import (
 )
 
 
-// TODO: rewrite later...
-func (lexer *Lexer) PrintErrorLineAsString(line int, column int) {
-	var context string
-	var FirstContext string
-	var ThirdContext string
-	var FirstLineString string = fmt.Sprintf("%d | ", line-1)
-	var LineString string = fmt.Sprintf("%d | ", line)
-	var ThirdLineString string = fmt.Sprintf("%d | ", line+1)
-	for {
-		r, _, err := lexer.reader.ReadRune()
-		if r == '\n' {
-			lexer.resetPosition()
-		} else {
-			if line == lexer.pos.line {
-				context = context + string(r)
-			} 
-			if line - 1 != 0 {
-				if line - 1 == lexer.pos.line {
-					FirstContext = FirstContext + string(r)
-				}
-			}
-			if line + 1 == lexer.pos.line {
-				ThirdContext = ThirdContext + string(r)
-			}
-		}
-		if line + 2 == lexer.pos.line {
-			break
-		}
-		if err != nil {
-			if err == io.EOF {
-				err = nil
-				break
-			}
-			panic(err)
-		}
-	}
-	first := FirstLineString + FirstContext
-	middle := LineString + context
-	third := ThirdLineString + ThirdContext
-	fmt.Print("  ")
-	fmt.Println(first)
-	fmt.Print("  ")
-	fmt.Println(middle)
-	column += 5
-	for i := 0; i < column; i++ {
-		fmt.Print(" ")
-	}
-	color.Red("^")
-	fmt.Print("  ")
-	fmt.Println(third)
-}
-
-
 // -----------------------------
 // ----------- Lexer -----------
 // -----------------------------
@@ -326,15 +273,12 @@ func (lexer *Lexer) Lex() (Position, Token, string, string) {
 					r, _, err = lexer.reader.ReadRune()
 					return startPos, TOKEN_STRING, val, lexer.FileName
 				} else {
-					line := lexer.pos.line
-					col := lexer.pos.column
 					file, err := os.Open(lexer.FileName)
 					if err != nil {
 						panic(err)
 					}
 					lexer := LexerInit(file, lexer.FileName)
 					fmt.Println(fmt.Sprintf("./%s:SyntaxError:%d:%d: unexpected token value `%s`.", lexer.FileName, lexer.pos.line, lexer.pos.column, string(r)))
-					lexer.PrintErrorLineAsString(line, col)
 					os.Exit(0)
 				}
         }
@@ -651,15 +595,7 @@ func ParserInit(lexer *Lexer) *Parser {
 
 func (parser *Parser) ParserEat(token Token) {
 	if token != parser.current_token_type {
-		line := parser.line
-		col := parser.column
-		file, err := os.Open(parser.FileName)
-		if err != nil {
-			panic(err)
-		}
-		lexer := LexerInit(file, parser.FileName)
 		fmt.Println(fmt.Sprintf("./%s:SyntaxError:%d:%d: unexpected token value `%s`.", parser.FileName, parser.line, parser.column, parser.current_token_value))
-		lexer.PrintErrorLineAsString(line, col)
 		os.Exit(0)
 	}
 	pos, tok, val, file := parser.lexer.Lex()
@@ -751,15 +687,7 @@ func ParserParseExpr(parser *Parser) AST {
 			}
 			parser.ParserEat(TOKEN_TYPE)
 		default:
-			line := parser.line
-			col := parser.column
-			file, err := os.Open(parser.FileName)
-			if err != nil {
-				panic(err)
-			}
-			lexer := LexerInit(file, parser.FileName)
 			fmt.Println(fmt.Sprintf("./%s:SyntaxError:%d:%d: unexpected token value `%s`.", parser.FileName, parser.line, parser.column, parser.current_token_value))
-			lexer.PrintErrorLineAsString(line, col)
 			os.Exit(0)
 	}
 
@@ -769,15 +697,7 @@ func ParserParseExpr(parser *Parser) AST {
 func ParserParse(parser *Parser) AST {
 	var Statements AsStatements
 	if  parser.current_token_type == TOKEN_DO || parser.current_token_type == TOKEN_END || parser.current_token_type == TOKEN_ELIF || parser.current_token_type == TOKEN_ELSE || parser.current_token_type == TOKEN_EXCEPT {
-		line := parser.line
-		col := parser.column
-		file, err := os.Open(parser.FileName)
-		if err != nil {
-			panic(err)
-		}
-		lexer := LexerInit(file, parser.FileName)
 		fmt.Println(fmt.Sprintf("./%s:SyntaxError:%d:%d: the body is empty, unexpected token value `%s`.", parser.FileName, parser.line, parser.column, parser.current_token_value))
-		lexer.PrintErrorLineAsString(line, col)
 		os.Exit(0)
 	}
 	for {
@@ -950,15 +870,7 @@ func ParserParse(parser *Parser) AST {
 			parser.current_token_type == TOKEN_ELSE || parser.current_token_type == TOKEN_EXCEPT || parser.current_token_type == TOKEN_R_BRACKET {
 			break
 		} else {
-			line := parser.line
-			col := parser.column
-			file, err := os.Open(parser.FileName)
-			if err != nil {
-				panic(err)
-			}
-			lexer := LexerInit(file, parser.FileName)
 			fmt.Println(fmt.Sprintf("./%s:SyntaxError:%d:%d: unexpected token value `%s`.", parser.FileName, parser.line, parser.column, parser.current_token_value))
-			lexer.PrintErrorLineAsString(line, col)
 			os.Exit(0)
 		}
 	}
@@ -983,7 +895,6 @@ func InitScope() *Scope {
 	}
 }
 
-// TODO: rewrite
 func (scope *Scope) OpPush(node AST, VariableScope *map[string]AST) (*Error) {
 	_, IsList := node.(NewList);
 	_, IsVar := node.(Var);
@@ -1688,9 +1599,8 @@ func (scope *Scope) OpVardef(name string, position NodePosition, VariableScope *
 			Variables[name] = VarValue
 			scope.Stack = scope.Stack[:len(scope.Stack)-1]
 		} else {
-			VariablesScope := *VariableScope
 			VarValue := scope.Stack[len(scope.Stack)-1]
-			VariablesScope[name] = VarValue
+			(*VariableScope)[name] = VarValue
 			scope.Stack = scope.Stack[:len(scope.Stack)-1]
 		}
 	}
@@ -1851,7 +1761,7 @@ func (scope *Scope) VisitorVisit(node AST, IsTry bool, VariableScope *map[string
 			case Assert:
 				err = scope.OpAssert(node)
 			default:
-				fmt.Println("Error: unexpected node type.")
+				panic("unreachable")
 		}
 		if err != nil {
 			if !IsTry {
