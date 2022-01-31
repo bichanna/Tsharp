@@ -211,12 +211,12 @@ You can also use `len` for `string`.
 ```
 try
     println
-except StackIndexError do
+except StackUnderflowError do
     # do something...
 end
 ```
 
-`StackIndexError` When you try to use a value from the stack when there is nothing on the stack.<br>
+`StackUnderflowError` When you try to use a value from the stack when there is nothing on the stack.<br>
 `TypeError` When the type is different.<br>
 `IndexError` When the indexes of arrays and strings are different.<br>
 `ImportError` When you try to import an invalid file.<br>
