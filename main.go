@@ -250,7 +250,7 @@ func (lexer *Lexer) Lex() (Position, Token, string, string) {
 						return startPos, TOKEN_ELSE, val, lexer.FileName
 					} else if val == "elif" {
 						return startPos, TOKEN_ELIF, val, lexer.FileName
-					} else if val == "NameError" || val == "StackIndexError" || val == "TypeError" || val == "ImportError" || val == "IndexError" || val == "AssertionError" {
+					} else if val == "NameError" || val == "StackUnderflowError" || val == "TypeError" || val == "ImportError" || val == "IndexError" || val == "AssertionError" {
 						return startPos, TOKEN_ERROR, val, lexer.FileName
 					} else if val == "except" {
 						return startPos, TOKEN_EXCEPT, val, lexer.FileName
@@ -396,7 +396,7 @@ func (lexer *Lexer) resetPosition() {
 type ErrorType int
 const (
 	ErrorVoid ErrorType = iota
-	StackIndexError
+	StackUnderflowError
 	NameError
 	TypeError
 	IndexError
@@ -624,8 +624,8 @@ func RetNodePosition(parser *Parser) NodePosition {
 
 func ParserParseError(parser *Parser) AST {
 	var err ErrorType
-	if parser.current_token_value == "StackIndexError" {
-		err = StackIndexError
+	if parser.current_token_value == "StackUnderflowError" {
+		err = StackUnderflowError
 	} else if parser.current_token_value == "NameError" {
 		err = NameError
 	} else if parser.current_token_value == "ImportError" {
@@ -937,8 +937,8 @@ func (scope *Scope) OpPush(node AST, VariableScope *map[string]AST) (*Error) {
 func (scope *Scope) OpDrop(node AST) (*Error) {
 	if len(scope.Stack) < 1 {
 		err := Error{}
-		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `drop` expected one or more element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
-		err.Type = StackIndexError
+		err.message = fmt.Sprintf("./%s:StackUnderflowError:%d:%d: `drop` expected one or more element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = StackUnderflowError
 		return &err
 	}
 	scope.Stack = scope.Stack[:len(scope.Stack)-1]
@@ -948,8 +948,8 @@ func (scope *Scope) OpDrop(node AST) (*Error) {
 func (scope *Scope) OpSwap(node AST) (*Error) {
 	if len(scope.Stack) < 2 {
 		err := Error{}
-		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `swap` expected two or more element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
-		err.Type = StackIndexError
+		err.message = fmt.Sprintf("./%s:StackUnderflowError:%d:%d: `swap` expected two or more element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = StackUnderflowError
 		return &err
 	}
 	first := scope.Stack[len(scope.Stack)-1]
@@ -967,8 +967,8 @@ func RetTokenAsStr(token uint8) string {
 func (scope *Scope) OpBinop(op uint8, position NodePosition) (*Error) {
 	if len(scope.Stack) < 2 {
 		err := Error{}
-		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `%s` expected more than 2 <int> type elements in the stack.", position.FileName, position.Line, position.Column, RetTokenAsStr(op))
-		err.Type = StackIndexError
+		err.message = fmt.Sprintf("./%s:StackUnderflowError:%d:%d: `%s` expected more than 2 <int> type elements in the stack.", position.FileName, position.Line, position.Column, RetTokenAsStr(op))
+		err.Type = StackUnderflowError
 		return &err
 	}
 	first := scope.Stack[len(scope.Stack)-1]
@@ -991,7 +991,7 @@ func (scope *Scope) OpBinop(op uint8, position NodePosition) (*Error) {
 
 	if !ok || !ok2 {
 		err := Error{}
-		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `%s` expected 2 <int> type or 2 <string> type elements in the stack.", position.FileName, position.Line, position.Column, RetTokenAsStr(op))
+		err.message = fmt.Sprintf("./%s:StackUnderflowError:%d:%d: `%s` expected 2 <int> type or 2 <string> type elements in the stack.", position.FileName, position.Line, position.Column, RetTokenAsStr(op))
 		err.Type = TypeError
 		return &err
 	}
@@ -1013,8 +1013,8 @@ func (scope *Scope) OpBinop(op uint8, position NodePosition) (*Error) {
 func (scope *Scope) OpCompare(op uint8, position NodePosition) (*Error) {
 	if len(scope.Stack) < 2 {
 		err := Error{}
-		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `%s` expected more than 2 elements in the stack.", position.FileName, position.Line, position.Column, RetTokenAsStr(op))
-		err.Type = StackIndexError
+		err.message = fmt.Sprintf("./%s:StackUnderflowError:%d:%d: `%s` expected more than 2 elements in the stack.", position.FileName, position.Line, position.Column, RetTokenAsStr(op))
+		err.Type = StackUnderflowError
 		return &err
 	}
 	first := scope.Stack[len(scope.Stack)-1]
@@ -1106,8 +1106,8 @@ func PrintAsList(node AST) {
 func (scope *Scope) OpPrintln(node AST) (*Error) {
 	if len(scope.Stack) < 1 {
 		err := Error{}
-		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `println` the stack is empty.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
-		err.Type = StackIndexError
+		err.message = fmt.Sprintf("./%s:StackUnderflowError:%d:%d: `println` the stack is empty.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = StackUnderflowError
 		return &err
 	}
 	expr := scope.Stack[len(scope.Stack)-1]
@@ -1119,7 +1119,7 @@ func (scope *Scope) OpPrintln(node AST) (*Error) {
 		case AsError:
 			switch expr.(AsError).err {
 				case NameError: fmt.Println("<error 'NameError'>")
-				case StackIndexError: fmt.Println("<error 'StackIndexError'>")
+				case StackUnderflowError: fmt.Println("<error 'StackUnderflowError'>")
 				case ImportError: fmt.Println("<error 'ImportError'>")
 				case IndexError: fmt.Println("<error 'IndexError'>")
 				case TypeError: fmt.Println("<error 'TypeError'>")
@@ -1136,8 +1136,8 @@ func (scope *Scope) OpPrintln(node AST) (*Error) {
 func (scope *Scope) OpPrint(node AST) (*Error) {
 	if len(scope.Stack) < 1 {
 		err := Error{}
-		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `print` the stack is empty.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
-		err.Type = StackIndexError
+		err.message = fmt.Sprintf("./%s:StackUnderflowError:%d:%d: `print` the stack is empty.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = StackUnderflowError
 		return &err
 	}
 	expr := scope.Stack[len(scope.Stack)-1]
@@ -1149,7 +1149,7 @@ func (scope *Scope) OpPrint(node AST) (*Error) {
 		case AsError:
 			switch expr.(AsError).err {
 				case NameError: fmt.Print("<error 'NameError'>")
-				case StackIndexError: fmt.Print("<error 'StackIndexError'>")
+				case StackUnderflowError: fmt.Print("<error 'StackUnderflowError'>")
 				case ImportError: fmt.Print("<error 'ImportError'>")
 				case IndexError: fmt.Print("<error 'IndexError'>")
 				case TypeError: fmt.Print("<error 'TypeError'>")
@@ -1168,15 +1168,15 @@ func (scope *Scope) OpIf(node AST, IsTry bool, VariableScope *map[string]AST) (b
 	var err *Error = nil
 	if len(scope.Stack) < 1 {
 		err := Error{}
-		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: if statement expected one or more <bool> type element in the stack.", node.(If).Position.FileName, node.(If).Position.Line, node.(If).Position.Column)
-		err.Type = StackIndexError
+		err.message = fmt.Sprintf("./%s:StackUnderflowError:%d:%d: if statement expected one or more <bool> type element in the stack.", node.(If).Position.FileName, node.(If).Position.Line, node.(If).Position.Column)
+		err.Type = StackUnderflowError
 		return BreakValue, &err
 	}
 	expr := scope.Stack[len(scope.Stack)-1]
 	if _, ok := expr.(AsBool); !ok {
 		err := Error{}
 		err.message = fmt.Sprintf("./%s:TypeError:%d:%d: if statement expected one or more <bool> type element in the stack.", node.(If).Position.FileName, node.(If).Position.Line, node.(If).Position.Column)
-		err.Type = StackIndexError
+		err.Type = StackUnderflowError
 		return BreakValue, &err
 	}
 	scope.Stack = scope.Stack[:len(scope.Stack)-1]
@@ -1191,15 +1191,15 @@ func (scope *Scope) OpIf(node AST, IsTry bool, VariableScope *map[string]AST) (b
 		scope.VisitorVisit(node.(If).ElifOps[i], IsTry, VariableScope)
 		if len(scope.Stack) < 1 {
 			err := Error{}
-			err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: if statement expected one or more <bool> type element in the stack.", node.(If).ElifPositions[i].FileName, node.(If).ElifPositions[i].Line, node.(If).ElifPositions[i].Column)
-			err.Type = StackIndexError
+			err.message = fmt.Sprintf("./%s:StackUnderflowError:%d:%d: if statement expected one or more <bool> type element in the stack.", node.(If).ElifPositions[i].FileName, node.(If).ElifPositions[i].Line, node.(If).ElifPositions[i].Column)
+			err.Type = StackUnderflowError
 			return BreakValue, &err
 		}
 		expr := scope.Stack[len(scope.Stack)-1]
 		if _, ok := expr.(AsBool); !ok {
 			err := Error{}
 			err.message = fmt.Sprintf("./%s:TypeError:%d:%d: if statement expected one or more <bool> type element in the stack.", node.(If).ElifPositions[i].FileName, node.(If).ElifPositions[i].Line, node.(If).ElifPositions[i].Column)
-			err.Type = StackIndexError
+			err.Type = StackUnderflowError
 			return BreakValue, &err
 		}
 		scope.Stack = scope.Stack[:len(scope.Stack)-1]
@@ -1223,8 +1223,8 @@ func (scope *Scope) OpFor(node AST, IsTry bool, VariableScope *map[string]AST) (
 		}
 		if len(scope.Stack) < 1 {
 			err := Error{}
-			err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: for loop expected one or more <bool> type element in the stack.", node.(For).Position.FileName, node.(For).Position.Line, node.(For).Position.Column)
-			err.Type = StackIndexError
+			err.message = fmt.Sprintf("./%s:StackUnderflowError:%d:%d: for loop expected one or more <bool> type element in the stack.", node.(For).Position.FileName, node.(For).Position.Line, node.(For).Position.Column)
+			err.Type = StackUnderflowError
 			return &err
 		}
 		expr := scope.Stack[len(scope.Stack)-1]
@@ -1265,16 +1265,16 @@ func (scope *Scope) OpTry(node AST, VariableScope *map[string]AST) (*Error) {
 func (scope *Scope) OpInc(node AST) (*Error) {
 	if len(scope.Stack) < 1 {
 		err := Error{}
-		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `inc` expected one or more <int> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
-		err.Type = StackIndexError
+		err.message = fmt.Sprintf("./%s:StackUnderflowError:%d:%d: `inc` expected one or more <int> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = StackUnderflowError
 		return &err
 	}
 	first := scope.Stack[len(scope.Stack)-1]
 	_, ok := first.(AsInt);
 	if !ok {
 		err := Error{}
-		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `inc` expected one or more <int> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
-		err.Type = StackIndexError
+		err.message = fmt.Sprintf("./%s:StackUnderflowError:%d:%d: `inc` expected one or more <int> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = StackUnderflowError
 		return &err
 	}
 	scope.Stack = scope.Stack[:len(scope.Stack)-1]
@@ -1289,16 +1289,16 @@ func (scope *Scope) OpInc(node AST) (*Error) {
 func (scope *Scope) OpDec(node AST) (*Error) {
 	if len(scope.Stack) < 1 {
 		err := Error{}
-		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `dec` expected one or more <int> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
-		err.Type = StackIndexError
+		err.message = fmt.Sprintf("./%s:StackUnderflowError:%d:%d: `dec` expected one or more <int> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = StackUnderflowError
 		return &err
 	}
 	first := scope.Stack[len(scope.Stack)-1]
 	_, ok := first.(AsInt);
 	if !ok {
 		err := Error{}
-		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `dec` expected one or more <int> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
-		err.Type = StackIndexError
+		err.message = fmt.Sprintf("./%s:StackUnderflowError:%d:%d: `dec` expected one or more <int> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = StackUnderflowError
 		return &err
 	}
 	scope.Stack = scope.Stack[:len(scope.Stack)-1]
@@ -1313,8 +1313,8 @@ func (scope *Scope) OpDec(node AST) (*Error) {
 func (scope *Scope) OpDup(node AST) (*Error) {
 	if len(scope.Stack) < 1 {
 		err := Error{}
-		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `dup` expected one or more <int> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
-		err.Type = StackIndexError
+		err.message = fmt.Sprintf("./%s:StackUnderflowError:%d:%d: `dup` expected one or more <int> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = StackUnderflowError
 		return &err
 	}
 	first := scope.Stack[len(scope.Stack)-1]
@@ -1325,8 +1325,8 @@ func (scope *Scope) OpDup(node AST) (*Error) {
 func (scope *Scope) OpAppend(node AST) (*Error) {
 	if len(scope.Stack) < 2 {
 		err := Error{}
-		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `append` expected two or more element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
-		err.Type = StackIndexError
+		err.message = fmt.Sprintf("./%s:StackUnderflowError:%d:%d: `append` expected two or more element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = StackUnderflowError
 		return &err
 	}
 	if _, ok := scope.Stack[len(scope.Stack)-2].(AsList); !ok {
@@ -1347,8 +1347,8 @@ func (scope *Scope) OpAppend(node AST) (*Error) {
 func (scope *Scope) OpRead(node AST) (*Error) {
 	if len(scope.Stack) < 2 {
 		err := Error{}
-		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `read` expected two or more element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
-		err.Type = StackIndexError
+		err.message = fmt.Sprintf("./%s:StackUnderflowError:%d:%d: `read` expected two or more element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = StackUnderflowError
 		return &err
 	}
 	visitedList := scope.Stack[len(scope.Stack)-2]
@@ -1395,8 +1395,8 @@ func (scope *Scope) OpRead(node AST) (*Error) {
 func (scope *Scope) OpReplace(node AST) (*Error) {
 	if len(scope.Stack) < 3 {
 		err := Error{}
-		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `replace` expected three or more element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
-		err.Type = StackIndexError
+		err.message = fmt.Sprintf("./%s:StackUnderflowError:%d:%d: `replace` expected three or more element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = StackUnderflowError
 		return &err
 	}
 	visitedList := scope.Stack[len(scope.Stack)-3]
@@ -1429,8 +1429,8 @@ func (scope *Scope) OpReplace(node AST) (*Error) {
 func (scope *Scope) OpRemove(node AST) (*Error) {
 	if len(scope.Stack) < 2 {
 		err := Error{}
-		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `remove` expected two or more element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
-		err.Type = StackIndexError
+		err.message = fmt.Sprintf("./%s:StackUnderflowError:%d:%d: `remove` expected two or more element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = StackUnderflowError
 		return &err
 	}
 	visitedList := scope.Stack[len(scope.Stack)-2]
@@ -1467,8 +1467,8 @@ func (scope *Scope) OpRemove(node AST) (*Error) {
 func (scope *Scope) OpIn(node AST) (*Error) {
 	if len(scope.Stack) < 2 {
 		err := Error{}
-		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `in` expected two or more element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
-		err.Type = StackIndexError
+		err.message = fmt.Sprintf("./%s:StackUnderflowError:%d:%d: `in` expected two or more element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = StackUnderflowError
 		return &err
 	}
 	visitedVal := scope.Stack[len(scope.Stack)-2]
@@ -1505,8 +1505,8 @@ func (scope *Scope) OpIn(node AST) (*Error) {
 func (scope *Scope) OpLen(node AST) (*Error) {
 	if len(scope.Stack) < 1 {
 		err := Error{}
-		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `len` expected one or more element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
-		err.Type = StackIndexError
+		err.message = fmt.Sprintf("./%s:StackUnderflowError:%d:%d: `len` expected one or more element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = StackUnderflowError
 		return &err
 	}
 	visitedExpr := scope.Stack[len(scope.Stack)-1]
@@ -1532,8 +1532,8 @@ func (scope *Scope) OpLen(node AST) (*Error) {
 func (scope *Scope) OpTypeOf(node AST) (*Error) {
 	if len(scope.Stack) < 1 {
 		err := Error{}
-		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `typeof` expected one or more element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
-		err.Type = StackIndexError
+		err.message = fmt.Sprintf("./%s:StackUnderflowError:%d:%d: `typeof` expected one or more element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = StackUnderflowError
 		return &err
 	}
 	visitedVal := scope.Stack[len(scope.Stack)-1]
@@ -1557,8 +1557,8 @@ func (scope *Scope) OpTypeOf(node AST) (*Error) {
 func (scope *Scope) OpRot(node AST) (*Error) {
 	if len(scope.Stack) < 3 {
 		err := Error{}
-		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `rot` expected more than three elements in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
-		err.Type = StackIndexError
+		err.message = fmt.Sprintf("./%s:StackUnderflowError:%d:%d: `rot` expected more than three elements in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = StackUnderflowError
 		return &err
 	}
 	visitedExpr := scope.Stack[len(scope.Stack)-1]
@@ -1574,8 +1574,8 @@ func (scope *Scope) OpRot(node AST) (*Error) {
 func (scope *Scope) OpOver(node AST) (*Error) {
 	if len(scope.Stack) < 2 {
 		err := Error{}
-		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `over` expected more than two elements in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
-		err.Type = StackIndexError
+		err.message = fmt.Sprintf("./%s:StackUnderflowError:%d:%d: `over` expected more than two elements in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = StackUnderflowError
 		return &err
 	}
 	scope.OpPush(scope.Stack[len(scope.Stack)-2], nil)
@@ -1585,8 +1585,8 @@ func (scope *Scope) OpOver(node AST) (*Error) {
 func (scope *Scope) OpVardef(name string, position NodePosition, VariableScope *map[string]AST) (*Error) {
 	if len(scope.Stack) < 1 {
 		err := Error{}
-		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: variable `%s` definiton expected one or more element in the stack.", position.FileName, position.Line, position.Column, name)
-		err.Type = StackIndexError
+		err.message = fmt.Sprintf("./%s:StackUnderflowError:%d:%d: variable `%s` definiton expected one or more element in the stack.", position.FileName, position.Line, position.Column, name)
+		err.Type = StackUnderflowError
 		return &err
 	}
 	if VariableScope == nil {
@@ -1651,8 +1651,8 @@ func (scope *Scope) OpImport(FileName string, position NodePosition) (*Error) {
 func (scope *Scope) OpAssert(node AST) (*Error) {
 	if len(scope.Stack) < 1 {
 		err := Error{}
-		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `assert` expected one or more <bool> type element in the stack.", node.(Assert).Position.FileName, node.(Assert).Position.Line, node.(Assert).Position.Column)
-		err.Type = StackIndexError
+		err.message = fmt.Sprintf("./%s:StackUnderflowError:%d:%d: `assert` expected one or more <bool> type element in the stack.", node.(Assert).Position.FileName, node.(Assert).Position.Line, node.(Assert).Position.Column)
+		err.Type = StackUnderflowError
 		return &err
 	}
 	BoolValue := scope.Stack[len(scope.Stack)-1]
@@ -1686,8 +1686,8 @@ func (scope *Scope) OpInput() {
 func (scope *Scope) OpSleep(node AST) (*Error) {
 	if len(scope.Stack) < 1 {
 		err := Error{}
-		err.message = fmt.Sprintf("./%s:StackIndexError:%d:%d: `sleep` expected one or more element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
-		err.Type = StackIndexError
+		err.message = fmt.Sprintf("./%s:StackUnderflowError:%d:%d: `sleep` expected one or more element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = StackUnderflowError
 		return &err
 	}
 	IntValue := scope.Stack[len(scope.Stack)-1]
