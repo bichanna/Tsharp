@@ -7,7 +7,6 @@ import (
 	"io"
 	"unicode"
 	"reflect"
-	_"unsafe"
 	"strconv"
 	"time"
 	"github.com/fatih/color"
