@@ -8,7 +8,6 @@ import (
 	"unicode"
 	"reflect"
 	"strconv"
-	"time"
 	"github.com/fatih/color"
 )
 
@@ -701,7 +700,7 @@ func ParserParse(parser *Parser) AST {
 	}
 	for {
 		if parser.current_token_type == TOKEN_ID {
-			if parser.current_token_value == "print" || parser.current_token_value == "break" || parser.current_token_value == "append" || parser.current_token_value == "remove" || parser.current_token_value == "swap" || parser.current_token_value == "in" || parser.current_token_value == "typeof" || parser.current_token_value == "rot" || parser.current_token_value == "len" || parser.current_token_value == "input" || parser.current_token_value == "sleep" ||
+			if parser.current_token_value == "print" || parser.current_token_value == "break" || parser.current_token_value == "append" || parser.current_token_value == "remove" || parser.current_token_value == "swap" || parser.current_token_value == "in" || parser.current_token_value == "typeof" || parser.current_token_value == "rot" || parser.current_token_value == "len" || parser.current_token_value == "input" ||
 			   parser.current_token_value == "drop"  || parser.current_token_value == "dup" || parser.current_token_value == "inc" || parser.current_token_value == "dec" || parser.current_token_value == "replace" || parser.current_token_value == "read" || parser.current_token_value == "println" || parser.current_token_value == "over" || parser.current_token_value == "printS" || parser.current_token_value == "exit" {
 				name := parser.current_token_value
 				position := RetNodePosition(parser)
@@ -1679,25 +1678,6 @@ func (scope *Scope) OpInput() {
 	scope.OpPush(StrExpr, nil)
 }
 
-func (scope *Scope) OpSleep(node AST) (*Error) {
-	if len(scope.Stack) < 1 {
-		err := Error{}
-		err.message = fmt.Sprintf("%s:StackUnderflowError:%d:%d: `sleep` expected one or more element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
-		err.Type = StackUnderflowError
-		return &err
-	}
-	IntValue := scope.Stack[len(scope.Stack)-1]
-	if _, ok := IntValue.(AsInt); !ok {
-		err := Error{}
-		err.message = fmt.Sprintf("%s:TypeError:%d:%d: `sleep` expected <int> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
-		err.Type = TypeError
-		return &err
-	}
-	scope.Stack = scope.Stack[:len(scope.Stack)-1]
-	time.Sleep(time.Duration(IntValue.(AsInt).IntValue) * time.Millisecond)
-	return nil
-}
-
 // -----------------------------
 // --------- Visitor -----------
 // -----------------------------
@@ -1731,7 +1711,6 @@ func (scope *Scope) VisitorVisit(node AST, IsTry bool, VariableScope *map[string
 					case "over": err = scope.OpOver(node)
 					case "exit": os.Exit(0)
 					case "input": scope.OpInput()
-					case "sleep": scope.OpSleep(node)
 					default: panic("unreachable")
 				}
 			case AsBinop:
