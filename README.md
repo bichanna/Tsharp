@@ -22,10 +22,6 @@ WARNING! THIS LANGUAGE IS A WORK IN PROGRESS! ANYTHING CAN CHANGE AT ANY MOMENT 
 It's like Forth, but written in Go ʕ◔ϖ◔ʔ.
 <a href="https://en.wikipedia.org/wiki/Stack-oriented_programming">Stack-oriented programming</a>
 
-### TODO
-- [ ] Compile to C
-- [ ] Self-hosted (<a href="https://github.com/Tsharp-lang/TsharpTsharp">T# written in T#</a>)
-
 ### Install (build) && Run
 
 > Install
