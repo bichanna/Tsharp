@@ -1030,6 +1030,7 @@ func (scope *Scope) OpCompare(op uint8, position NodePosition) (*Error) {
 				case AsType: val = second.(AsType).TypeValue == first.(AsType).TypeValue
 				case AsError: val = second.(AsError).err == first.(AsError).err
 				case AsList: val = reflect.DeepEqual(second.(AsList).ListArgs, first.(AsList).ListArgs)
+				case Blockdef: val = reflect.DeepEqual(second.(Blockdef), first.(Blockdef))
 			}
 		}
 	} else if op == TOKEN_NOT_EQUALS {
@@ -1043,6 +1044,7 @@ func (scope *Scope) OpCompare(op uint8, position NodePosition) (*Error) {
 				case AsType: val = second.(AsType).TypeValue != first.(AsType).TypeValue
 				case AsError: val = second.(AsError).err != first.(AsError).err
 				case AsList: val = !reflect.DeepEqual(second.(AsList).ListArgs, first.(AsList).ListArgs)
+				case Blockdef: val = !reflect.DeepEqual(second.(Blockdef), first.(Blockdef))
 			}
 		}
 	} else if op == TOKEN_OR || op == TOKEN_AND {
@@ -1090,6 +1092,8 @@ func PrintAsList(node AST) {
 				print(node.(AsList).ListArgs[i].(AsStr).StringValue)
 			case AsInt:
 				print(strconv.Itoa(node.(AsList).ListArgs[i].(AsInt).IntValue))
+			case Blockdef:
+				print(fmt.Sprintf("<block %s at %p>", node.(Blockdef).Name, &node))
 			case AsBool:
 				print(node.(AsList).ListArgs[i].(AsBool).BoolValue)
 			case AsList:
@@ -1115,6 +1119,7 @@ func (scope *Scope) OpPrintln(node AST) (*Error) {
 		case AsInt: fmt.Println(expr.(AsInt).IntValue)
 		case AsBool: fmt.Println(expr.(AsBool).BoolValue)
 		case AsType: fmt.Println(fmt.Sprintf("<%s>" ,expr.(AsType).TypeValue))
+		case Blockdef: fmt.Print(fmt.Sprintf("<block %s at %p>", expr.(Blockdef).Name, &expr))
 		case AsError:
 			switch expr.(AsError).err {
 				case NameError: fmt.Println("<error 'NameError'>")
@@ -1145,6 +1150,7 @@ func (scope *Scope) OpPrint(node AST) (*Error) {
 		case AsInt: fmt.Print(expr.(AsInt).IntValue)
 		case AsBool: fmt.Print(expr.(AsBool).BoolValue)
 		case AsType: fmt.Print(fmt.Sprintf("<%s>" ,expr.(AsType).TypeValue))
+		case Blockdef: fmt.Print(fmt.Sprintf("<block %s at %p>", expr.(Blockdef).Name, &expr))
 		case AsError:
 			switch expr.(AsError).err {
 				case NameError: fmt.Print("<error 'NameError'>")
@@ -1544,6 +1550,7 @@ func (scope *Scope) OpTypeOf(node AST) (*Error) {
 		case AsBool: TypeVal = "bool"
 		case AsType: TypeVal = "type"
 		case AsError: TypeVal = "error"
+		case Blockdef: TypeVal = "block"
 	}
 	expr := AsType {
 		TypeVal,
@@ -1607,25 +1614,21 @@ func (scope *Scope) OpVardef(name string, position NodePosition, VariableScope *
 }
 
 func (scope *Scope) OpBlockdef(node AST) (*Error) {
-	if _, ok := Blocks[node.(Blockdef).Name]; ok {
-		err := Error{}
-		err.message = fmt.Sprintf("NameError: block `%s` is already defined.", node.(Blockdef).Name)
-		err.Type = NameError
-		return &err
-	}
-	Blocks[node.(Blockdef).Name] = node.(Blockdef).BlockBody
+	Variables[node.(Blockdef).Name] = node
 	return nil
 }
 
 func (scope *Scope) OpCallBlock(name string, position NodePosition) *Error {
-	if _, ok := Blocks[name]; !ok {
+	_, ok := Variables[name];
+	_, ok2 := Variables[name].(Blockdef);
+	if !ok || !ok2 {
 		err := Error{}
 		err.message = fmt.Sprintf("%s:NameError:%d:%d: undefined block `%s`.", position.FileName, position.Line, position.Column, name)
 		err.Type = NameError
 		return &err
 	}
 	VariableScope := map[string]AST{}
-	scope.VisitorVisit(Blocks[name], false, &VariableScope)
+	scope.VisitorVisit(Variables[name].(Blockdef).BlockBody, false, &VariableScope)
 	return nil
 }
 
