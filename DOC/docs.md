@@ -219,7 +219,7 @@ end
 `StackUnderflowError` When you try to use a value from the stack when there is nothing on the stack.<br>
 `TypeError` When the type is different.<br>
 `IndexError` When the indexes of arrays and strings are different.<br>
-`ImportError` When you try to import an invalid file.<br>
+`IncludeError` When you try to include an invalid file.<br>
 `NameError` When you use a variable that does not exist.<br>
 `AssertionError` Assertion<br>
 
@@ -228,9 +228,9 @@ end
 false assert "assertion error message..."
 ```
 
-## Import
+## Include
 ```
-import "main.tsp"
+include "main.tsp"
 ```
 
 ## Built in T#
