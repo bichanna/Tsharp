@@ -249,7 +249,7 @@ func (lexer *Lexer) Lex() (Position, Token, string, string) {
 						return startPos, TOKEN_ELSE, val, lexer.FileName
 					} else if val == "elif" {
 						return startPos, TOKEN_ELIF, val, lexer.FileName
-					} else if val == "NameError" || val == "StackUnderflowError" || val == "TypeError" || val == "ImportError" || val == "IndexError" || val == "AssertionError" {
+					} else if val == "NameError" || val == "StackUnderflowError" || val == "TypeError" || val == "IncludeError" || val == "IndexError" || val == "AssertionError" {
 						return startPos, TOKEN_ERROR, val, lexer.FileName
 					} else if val == "except" {
 						return startPos, TOKEN_EXCEPT, val, lexer.FileName
@@ -399,7 +399,7 @@ const (
 	NameError
 	TypeError
 	IndexError
-	ImportError
+	IncludeError
 	AssertionError
 )
 
@@ -456,12 +456,12 @@ type AsId struct {
 
 func (node AsId) node() {}
 
-type Import struct {
+type Include struct {
 	FileName string
 	Position NodePosition
 }
 
-func (node Import) node() {}
+func (node Include) node() {}
 
 type Assert struct {
 	Position NodePosition
@@ -627,8 +627,8 @@ func ParserParseError(parser *Parser) AST {
 		err = StackUnderflowError
 	} else if parser.current_token_value == "NameError" {
 		err = NameError
-	} else if parser.current_token_value == "ImportError" {
-		err = ImportError
+	} else if parser.current_token_value == "IncludeError" {
+		err = IncludeError
 	} else if parser.current_token_value == "TypeError" {
 		err = TypeError
 	} else if parser.current_token_value == "IndexError" {
@@ -742,14 +742,14 @@ func ParserParse(parser *Parser) AST {
 					position,
 				}
 				Statements = append(Statements, CallBlockExpr)
-			} else if parser.current_token_value == "import" {
+			} else if parser.current_token_value == "include" {
 				parser.ParserEat(TOKEN_ID)
-				ImportExpr := Import {
+				IncludeExpr := Include {
 					parser.current_token_value,
 					RetNodePosition(parser),
 				}
 				parser.ParserEat(TOKEN_STRING)
-				Statements = append(Statements, ImportExpr)
+				Statements = append(Statements, IncludeExpr)
 			} else if parser.current_token_value == "if" {
 				parser.ParserEat(TOKEN_ID)
 				position := RetNodePosition(parser)
@@ -1123,7 +1123,7 @@ func (scope *Scope) OpPrintln(node AST) (*Error) {
 			switch expr.(AsError).err {
 				case NameError: fmt.Println("<error 'NameError'>")
 				case StackUnderflowError: fmt.Println("<error 'StackUnderflowError'>")
-				case ImportError: fmt.Println("<error 'ImportError'>")
+				case IncludeError: fmt.Println("<error 'IncludeError'>")
 				case IndexError: fmt.Println("<error 'IndexError'>")
 				case TypeError: fmt.Println("<error 'TypeError'>")
 				default: fmt.Println(fmt.Sprintf("unexpected error <%d>", expr.(AsError).err))
@@ -1154,7 +1154,7 @@ func (scope *Scope) OpPrint(node AST) (*Error) {
 			switch expr.(AsError).err {
 				case NameError: fmt.Print("<error 'NameError'>")
 				case StackUnderflowError: fmt.Print("<error 'StackUnderflowError'>")
-				case ImportError: fmt.Print("<error 'ImportError'>")
+				case IncludeError: fmt.Print("<error 'IncludeError'>")
 				case IndexError: fmt.Print("<error 'IndexError'>")
 				case TypeError: fmt.Print("<error 'TypeError'>")
 				default: fmt.Print(fmt.Sprintf("unexpected error <%d>", expr.(AsError).err))
@@ -1631,11 +1631,11 @@ func (scope *Scope) OpCallBlock(name string, position NodePosition) *Error {
 	return nil
 }
 
-func (scope *Scope) OpImport(FileName string, position NodePosition) (*Error) {
+func (scope *Scope) OpInclude(FileName string, position NodePosition) (*Error) {
 	if _, err := os.Stat(FileName); os.IsNotExist(err) {
 		err := Error{}
-		err.message = fmt.Sprintf("%s:ImportError:%d:%d: invalid file name `%s`.", position.FileName, position.Line, position.Column, FileName)
-		err.Type = ImportError
+		err.message = fmt.Sprintf("%s:IncludeError:%d:%d: invalid file name `%s`.", position.FileName, position.Line, position.Column, FileName)
+		err.Type = IncludeError
 		return &err
 	}
 	file, err := os.Open(FileName)
@@ -1747,8 +1747,8 @@ func (scope *Scope) VisitorVisit(node AST, IsTry bool, VariableScope *map[string
 				err = scope.OpBlockdef(node)
 			case CallBlock:
 				err = scope.OpCallBlock(node.(CallBlock).Name, node.(CallBlock).Position)
-			case Import:
-				err = scope.OpImport(node.(Import).FileName, node.(Import).Position)
+			case Include:
+				err = scope.OpInclude(node.(Include).FileName, node.(Include).Position)
 			case Compare:
 				err = scope.OpCompare(node.(Compare).op, node.(Compare).Position)
 			case AsStatements:
