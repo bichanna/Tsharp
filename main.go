@@ -886,7 +886,6 @@ type Scope struct {
 }
 
 var Variables = map[string]AST{}
-var Blocks = map[string]AST{}
 
 func InitScope() *Scope {
 	return &Scope{
