@@ -894,38 +894,33 @@ func InitScope() *Scope {
 }
 
 func (scope *Scope) OpPush(node AST, VariableScope *map[string]AST) (*Error) {
-	_, IsList := node.(NewList);
-	_, IsVar := node.(Var);
-	if IsList {
+	if _, IsList := node.(NewList); IsList {
 		ListScope := InitScope()
 		if node.(NewList).ListBody != nil {
 			ListScope.VisitorVisit(node.(NewList).ListBody, false, VariableScope)
 		}
 		scope.Stack = append(scope.Stack, AsList{ListScope.Stack})
-	} else if IsVar {
+	} else if _, IsVar := node.(Var); IsVar {
 		if VariableScope == nil {
 			if _, ok := Variables[node.(Var).Name]; ok {
 				scope.Stack = append(scope.Stack, Variables[node.(Var).Name])
-			} else {
-				err := Error{}
-				err.message = fmt.Sprintf("%s:NameError:%d:%d: undefined variable `%s`", node.(Var).Position.FileName, node.(Var).Position.Line, node.(Var).Position.Column,node.(Var).Name)
-				err.Type = NameError
-				return &err
+				return nil
 			}
 		} else {
 			if _, ok := (*VariableScope)[node.(Var).Name]; ok {
 				scope.Stack = append(scope.Stack, (*VariableScope)[node.(Var).Name])
+				return nil
 			} else {
 				if _, ok := Variables[node.(Var).Name]; ok {
 					scope.Stack = append(scope.Stack, Variables[node.(Var).Name])
-				} else {
-					err := Error{}
-					err.message = fmt.Sprintf("%s:NameError:%d:%d: undefined variable `%s`", node.(Var).Position.FileName, node.(Var).Position.Line, node.(Var).Position.Column,node.(Var).Name)
-					err.Type = NameError
-					return &err
+					return nil
 				}
 			}
 		}
+		err := Error{}
+		err.message = fmt.Sprintf("%s:NameError:%d:%d: undefined variable `%s`", node.(Var).Position.FileName, node.(Var).Position.Line, node.(Var).Position.Column,node.(Var).Name)
+		err.Type = NameError
+		return &err
 	} else {
 		scope.Stack = append(scope.Stack, node)
 	}
