@@ -216,7 +216,7 @@ By the way, this is how I write the loop process.
 
 "; Hello World!\n" F fwrite
 
-F read -> context
+F fread -> context
 
 context println
 
