@@ -66,10 +66,9 @@ block Main do
     "Hello World!" println
 end
 
-call Main
+Main
 ```
 In T# a block is defined using the `block` keyword.
-Call a block using the `call` keyword.
 
 ## Variables
 ```
@@ -96,7 +95,7 @@ block Main do
     end
 end
 
-call Main
+Main
 
 N println
 
