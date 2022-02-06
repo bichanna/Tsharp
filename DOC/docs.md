@@ -36,6 +36,7 @@ $ ./main.exe examples/main.tsp
 | `input` | ` -- <input value> ` | user input. |
 | `exit` | ` -- ` | exit |
 | `free` | ` a b c -- ` | drop all elements of the stack. |
+| `isdigit` | ` <string value> -- <bool value> ` | check the top string type element is digit. push the bool value. |
 
 ## Arithmetic Operators
 ```
