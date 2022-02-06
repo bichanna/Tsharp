@@ -248,7 +248,7 @@ func (lexer *Lexer) Lex() (Position, Token, string, string) {
 						return startPos, TOKEN_ELSE, val, lexer.FileName
 					} else if val == "elif" {
 						return startPos, TOKEN_ELIF, val, lexer.FileName
-					} else if val == "NameError" || val == "StackUnderflowError" || val == "TypeError" || val == "IncludeError" || val == "IndexError" || val == "AssertionError" {
+					} else if val == "NameError" || val == "StackUnderflowError" || val == "TypeError" || val == "IncludeError" || val == "IndexError" || val == "AssertionError" || val == "FileNotFoundError" {
 						return startPos, TOKEN_ERROR, val, lexer.FileName
 					} else if val == "except" {
 						return startPos, TOKEN_EXCEPT, val, lexer.FileName
@@ -400,6 +400,7 @@ const (
 	IndexError
 	IncludeError
 	AssertionError
+	FileNotFoundError
 )
 
 type Error struct {
@@ -435,6 +436,13 @@ type AsBool struct {
 }
 
 func (node AsBool) node() {}
+
+type AsFile struct {
+	FileAddress *os.File
+	FileName string
+}
+
+func (node AsFile) node() {}
 
 type NewList struct {
 	ListBody AST
@@ -627,6 +635,8 @@ func ParserParseError(parser *Parser) AST {
 		err = IndexError
 	} else if parser.current_token_value == "AssertionError" {
 		err = AssertionError
+	} else if parser.current_token_value == "FileNotFoundError" {
+		err = FileNotFoundError
 	}
 	parser.ParserEat(TOKEN_ERROR)
 	ErrorExpr := AsError {
@@ -693,7 +703,7 @@ func ParserParse(parser *Parser) AST {
 	}
 	for {
 		if parser.current_token_type == TOKEN_ID {
-			if parser.current_token_value == "print" || parser.current_token_value == "break" || parser.current_token_value == "append" || parser.current_token_value == "remove" || parser.current_token_value == "swap" || parser.current_token_value == "in" || parser.current_token_value == "typeof" || parser.current_token_value == "rot" || parser.current_token_value == "len" || parser.current_token_value == "input" || parser.current_token_value == "drop"  || parser.current_token_value == "dup" || parser.current_token_value == "inc" || parser.current_token_value == "dec" || parser.current_token_value == "replace" || parser.current_token_value == "read" || parser.current_token_value == "println" || parser.current_token_value == "over" || parser.current_token_value == "printS" || parser.current_token_value == "exit" || parser.current_token_value == "free" {
+			if parser.current_token_value == "print" || parser.current_token_value == "break" || parser.current_token_value == "append" || parser.current_token_value == "remove" || parser.current_token_value == "swap" || parser.current_token_value == "in" || parser.current_token_value == "typeof" || parser.current_token_value == "rot" || parser.current_token_value == "len" || parser.current_token_value == "input" || parser.current_token_value == "drop"  || parser.current_token_value == "dup" || parser.current_token_value == "inc" || parser.current_token_value == "dec" || parser.current_token_value == "replace" || parser.current_token_value == "read" || parser.current_token_value == "println" || parser.current_token_value == "over" || parser.current_token_value == "printS" || parser.current_token_value == "exit" || parser.current_token_value == "free" || parser.current_token_value == "fopen" || parser.current_token_value == "fclose" || parser.current_token_value == "fwrite" || parser.current_token_value == "fread" || parser.current_token_value == "isdigit" {
 				name := parser.current_token_value
 				position := RetNodePosition(parser)
 				IdExpr := AsId{
@@ -1081,11 +1091,13 @@ func PrintAsList(node AST) {
 			case AsStr:
 				fmt.Print(node.(AsList).ListArgs[i].(AsStr).StringValue)
 			case AsInt:
-				fmt.Print(strconv.Itoa(node.(AsList).ListArgs[i].(AsInt).IntValue))
+				fmt.Print(node.(AsList).ListArgs[i].(AsInt).IntValue)
 			case AsBool:
 				fmt.Print(node.(AsList).ListArgs[i].(AsBool).BoolValue)
 			case AsType:
 				fmt.Print(fmt.Sprintf("<%s>", node.(AsList).ListArgs[i].(AsType).TypeValue))
+			case AsFile:
+				fmt.Print(fmt.Sprintf("<file %s>", node.(AsList).ListArgs[i].(AsFile).FileName))
 			case AsError:
 				switch node.(AsList).ListArgs[i].(AsError).err {
 					case NameError: fmt.Print("<error 'NameError'>")
@@ -1093,6 +1105,7 @@ func PrintAsList(node AST) {
 					case IncludeError: fmt.Print("<error 'IncludeError'>")
 					case IndexError: fmt.Print("<error 'IndexError'>")
 					case TypeError: fmt.Print("<error 'TypeError'>")
+					case FileNotFoundError: fmt.Print("<error 'FileNotFoundError'>")
 					default: fmt.Print(fmt.Sprintf("unexpected error <%d>", node.(AsList).ListArgs[i].(AsError).err))
 				}
 			case AsList:
@@ -1118,6 +1131,7 @@ func (scope *Scope) OpPrintln(node AST) (*Error) {
 		case AsInt: fmt.Println(expr.(AsInt).IntValue)
 		case AsBool: fmt.Println(expr.(AsBool).BoolValue)
 		case AsType: fmt.Println(fmt.Sprintf("<%s>" ,expr.(AsType).TypeValue))
+		case AsFile: fmt.Println(fmt.Sprintf("<file %s>", expr.(AsFile).FileName))
 		case AsError:
 			switch expr.(AsError).err {
 				case NameError: fmt.Println("<error 'NameError'>")
@@ -1125,6 +1139,7 @@ func (scope *Scope) OpPrintln(node AST) (*Error) {
 				case IncludeError: fmt.Println("<error 'IncludeError'>")
 				case IndexError: fmt.Println("<error 'IndexError'>")
 				case TypeError: fmt.Println("<error 'TypeError'>")
+				case FileNotFoundError: fmt.Print("<error 'FileNotFoundError'>")
 				default: fmt.Println(fmt.Sprintf("unexpected error <%d>", expr.(AsError).err))
 			}
 		case AsList:
@@ -1147,7 +1162,8 @@ func (scope *Scope) OpPrint(node AST) (*Error) {
 		case AsStr: fmt.Print(expr.(AsStr).StringValue)
 		case AsInt: fmt.Print(expr.(AsInt).IntValue)
 		case AsBool: fmt.Print(expr.(AsBool).BoolValue)
-		case AsType: fmt.Print(fmt.Sprintf("<%s>" ,expr.(AsType).TypeValue))
+		case AsType: fmt.Print(fmt.Sprintf("<%s>", expr.(AsType).TypeValue))
+		case AsFile: fmt.Print(fmt.Sprintf("<file %s>", expr.(AsFile).FileName))
 		case AsError:
 			switch expr.(AsError).err {
 				case NameError: fmt.Print("<error 'NameError'>")
@@ -1155,6 +1171,7 @@ func (scope *Scope) OpPrint(node AST) (*Error) {
 				case IncludeError: fmt.Print("<error 'IncludeError'>")
 				case IndexError: fmt.Print("<error 'IndexError'>")
 				case TypeError: fmt.Print("<error 'TypeError'>")
+				case FileNotFoundError: fmt.Print("<error 'FileNotFoundError'>")
 				default: fmt.Print(fmt.Sprintf("unexpected error <%d>", expr.(AsError).err))
 			}
 		case AsList:
@@ -1671,6 +1688,188 @@ func (scope *Scope) OpFree() {
 	scope.Stack = scope.Stack[:0]
 }
 
+func (scope *Scope) OpFopen(node AST) (*Error) {
+	if len(scope.Stack) < 1 {
+		err := Error{}
+		err.message = fmt.Sprintf("%s:StackUnderflowError:%d:%d: `fopen` expected one or more <file> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = StackUnderflowError
+		return &err
+	}
+
+	FileName := scope.Stack[len(scope.Stack)-1]
+
+	scope.Stack = scope.Stack[:len(scope.Stack)-1]
+
+	if _, ok := FileName.(AsStr); !ok {
+		err := Error{}
+		err.message = fmt.Sprintf("%s:TypeError:%d:%d: `fopen` expected <string> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = TypeError
+		return &err
+	}
+
+	if _, err := os.Stat(FileName.(AsStr).StringValue); os.IsNotExist(err) {
+		err := Error{}
+		err.message = fmt.Sprintf("%s:FileNotFoundError:%d:%d: `fopen` invalid file name `%s`.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column, FileName.(AsStr).StringValue)
+		err.Type = FileNotFoundError
+		return &err
+	}
+
+	var file, err = os.OpenFile(FileName.(AsStr).StringValue, os.O_CREATE|os.O_RDWR|os.O_APPEND, os.ModeAppend)
+
+	if err != nil {
+		err := Error{}
+		err.message = fmt.Sprintf("%s:FileNotFoundError:%d:%d: `fopen` invalid file name `%s`.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column, FileName.(AsStr).StringValue)
+		err.Type = FileNotFoundError
+		return &err
+	}
+
+	FileExpr := AsFile {
+		file,
+		FileName.(AsStr).StringValue,
+	}
+
+	scope.OpPush(FileExpr, nil)
+
+	return nil
+}
+
+func (scope *Scope) OpFclose(node AST) (*Error) {
+	if len(scope.Stack) < 1 {
+		err := Error{}
+		err.message = fmt.Sprintf("%s:StackUnderflowError:%d:%d: `fclose` expected one or more <file> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = StackUnderflowError
+		return &err
+	}
+
+	File := scope.Stack[len(scope.Stack)-1]
+
+	scope.Stack = scope.Stack[:len(scope.Stack)-1]
+
+	if _, ok := File.(AsFile); !ok {
+		err := Error{}
+		err.message = fmt.Sprintf("%s:TypeError:%d:%d: `fclose` expected <file> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = TypeError
+		return &err
+	}
+
+	File.(AsFile).FileAddress.Close()
+
+	return nil
+}
+
+func (scope *Scope) OpFwrite(node AST) (*Error) {
+	if len(scope.Stack) < 2 {
+		err := Error{}
+		err.message = fmt.Sprintf("%s:StackUnderflowError:%d:%d: `fwrite` expected type <string> and <file> element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = StackUnderflowError
+		return &err
+	}
+
+	File := scope.Stack[len(scope.Stack)-1]
+
+	StringValue := scope.Stack[len(scope.Stack)-2]
+
+	scope.Stack = scope.Stack[:len(scope.Stack)-2]
+
+	if _, ok := File.(AsFile); !ok {
+		err := Error{}
+		err.message = fmt.Sprintf("%s:TypeError:%d:%d: `fwrite` expected <file> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = TypeError
+		return &err
+	}
+
+	if _, ok := StringValue.(AsStr); !ok {
+		err := Error{}
+		err.message = fmt.Sprintf("%s:TypeError:%d:%d: `fwrite` expected <string> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = TypeError
+		return &err
+	}
+
+	if _, err := File.(AsFile).FileAddress.WriteString(StringValue.(AsStr).StringValue); err != nil {
+        err := Error{}
+		err.message = fmt.Sprintf("%s:FileNotFoundError:%d:%d: `fopen` invalid file name `%s`.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column, File.(AsFile).FileName)
+		err.Type = FileNotFoundError
+		return &err
+    }
+
+	return nil
+}
+
+func (scope *Scope) OpFread(node AST) (*Error) {
+	if len(scope.Stack) < 1 {
+		err := Error{}
+		err.message = fmt.Sprintf("%s:StackUnderflowError:%d:%d: `fread` expected at least one <file> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = StackUnderflowError
+		return &err
+	}
+
+	File := scope.Stack[len(scope.Stack)-1]
+
+	scope.Stack = scope.Stack[:len(scope.Stack)-1]
+
+	if _, ok := File.(AsFile); !ok {
+		err := Error{}
+		err.message = fmt.Sprintf("%s:TypeError:%d:%d: `fread` expected <file> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = TypeError
+		return &err
+	}
+
+	body, err := os.ReadFile(File.(AsFile).FileName)
+
+    if err != nil {
+        err := Error{}
+		err.message = fmt.Sprintf("%s:FileNotFoundError:%d:%d: `fopen` invalid file name `%s`.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column, File.(AsFile).FileName)
+		err.Type = FileNotFoundError
+		return &err
+	}
+
+	StrExpr := AsStr {
+		string(body),
+	}
+
+	scope.OpPush(StrExpr, nil)
+	return nil
+}
+
+func (scope *Scope) OpIsdigit(node AST) (*Error) {
+	if len(scope.Stack) < 1 {
+		err := Error{}
+		err.message = fmt.Sprintf("%s:StackUnderflowError:%d:%d: `isdigit` expected at least one <string> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = StackUnderflowError
+		return &err
+	}
+
+	StringValue := scope.Stack[len(scope.Stack)-1]
+	scope.Stack = scope.Stack[:len(scope.Stack)-1]
+
+	if _, ok := StringValue.(AsStr); !ok {
+		err := Error{}
+		err.message = fmt.Sprintf("%s:TypeError:%d:%d: `isdigit` expected <string> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = TypeError
+		return &err
+	}
+
+	_, err := strconv.Atoi(StringValue.(AsStr).StringValue)
+
+	var BoolValue bool
+
+    if err != nil {
+        BoolValue = false
+    } else {
+        BoolValue = true
+    }
+
+	err = nil
+
+	BoolExpr := AsBool {
+		BoolValue,
+	}
+
+	scope.OpPush(BoolExpr, nil)
+
+	return nil
+}
+
 // -----------------------------
 // --------- Visitor -----------
 // -----------------------------
@@ -1705,6 +1904,11 @@ func (scope *Scope) VisitorVisit(node AST, IsTry bool, VariableScope *map[string
 					case "exit": os.Exit(0)
 					case "input": scope.OpInput()
 					case "free": scope.OpFree()
+					case "fopen": err = scope.OpFopen(node)
+					case "fwrite": err = scope.OpFwrite(node)
+					case "fclose": err = scope.OpFclose(node)
+					case "fread": err = scope.OpFread(node)
+					case "isdigit": err = scope.OpIsdigit(node)
 					default: panic("unreachable")
 				}
 			case AsBinop:
