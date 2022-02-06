@@ -522,13 +522,6 @@ type Blockdef struct {
 
 func (node Blockdef) node() {}
 
-type CallBlock struct {
-	Name string
-	Position NodePosition
-}
-
-func (node CallBlock) node() {}
-
 type If struct {
 	IfOp AST
 	Position NodePosition
@@ -730,16 +723,6 @@ func ParserParse(parser *Parser) AST {
 					BlockBody: BlockBody,
 				}
 				Statements = append(Statements, BlockdefExpr)
-			} else if parser.current_token_value == "call" {
-				position := RetNodePosition(parser)
-				parser.ParserEat(TOKEN_ID)
-				name := parser.current_token_value
-				parser.ParserEat(TOKEN_ID)
-				CallBlockExpr := CallBlock {
-					name,
-					position,
-				}
-				Statements = append(Statements, CallBlockExpr)
 			} else if parser.current_token_value == "include" {
 				parser.ParserEat(TOKEN_ID)
 				IncludeExpr := Include {
@@ -901,15 +884,30 @@ func (scope *Scope) OpPush(node AST, VariableScope *map[string]AST) (*Error) {
 	} else if _, IsVar := node.(Var); IsVar {
 		if VariableScope == nil {
 			if _, ok := Variables[node.(Var).Name]; ok {
+				if _, ok := Variables[node.(Var).Name].(Blockdef); ok {
+					VariableScope := map[string]AST{}
+					scope.VisitorVisit(Variables[node.(Var).Name].(Blockdef).BlockBody, false, &VariableScope)
+					return nil
+				}
 				scope.Stack = append(scope.Stack, Variables[node.(Var).Name])
 				return nil
 			}
 		} else {
 			if _, ok := (*VariableScope)[node.(Var).Name]; ok {
+				if _, ok := (*VariableScope)[node.(Var).Name].(Blockdef); ok {
+					NewVariableScope := map[string]AST{}
+					scope.VisitorVisit((*VariableScope)[node.(Var).Name].(Blockdef).BlockBody, false, &NewVariableScope)
+					return nil
+				}
 				scope.Stack = append(scope.Stack, (*VariableScope)[node.(Var).Name])
 				return nil
 			} else {
 				if _, ok := Variables[node.(Var).Name]; ok {
+					if _, ok := Variables[node.(Var).Name].(Blockdef); ok {
+						NewVariableScope := map[string]AST{}
+						scope.VisitorVisit(Variables[node.(Var).Name].(Blockdef).BlockBody, false, &NewVariableScope)
+						return nil
+					}
 					scope.Stack = append(scope.Stack, Variables[node.(Var).Name])
 					return nil
 				}
@@ -1084,8 +1082,6 @@ func PrintAsList(node AST) {
 				fmt.Print(node.(AsList).ListArgs[i].(AsStr).StringValue)
 			case AsInt:
 				fmt.Print(strconv.Itoa(node.(AsList).ListArgs[i].(AsInt).IntValue))
-			case Blockdef:
-				fmt.Print(fmt.Sprintf("<block %s>", node.(AsList).ListArgs[i].(Blockdef).Name))
 			case AsBool:
 				fmt.Print(node.(AsList).ListArgs[i].(AsBool).BoolValue)
 			case AsType:
@@ -1122,7 +1118,6 @@ func (scope *Scope) OpPrintln(node AST) (*Error) {
 		case AsInt: fmt.Println(expr.(AsInt).IntValue)
 		case AsBool: fmt.Println(expr.(AsBool).BoolValue)
 		case AsType: fmt.Println(fmt.Sprintf("<%s>" ,expr.(AsType).TypeValue))
-		case Blockdef: fmt.Println(fmt.Sprintf("<block %s>", expr.(Blockdef).Name))
 		case AsError:
 			switch expr.(AsError).err {
 				case NameError: fmt.Println("<error 'NameError'>")
@@ -1153,7 +1148,6 @@ func (scope *Scope) OpPrint(node AST) (*Error) {
 		case AsInt: fmt.Print(expr.(AsInt).IntValue)
 		case AsBool: fmt.Print(expr.(AsBool).BoolValue)
 		case AsType: fmt.Print(fmt.Sprintf("<%s>" ,expr.(AsType).TypeValue))
-		case Blockdef: fmt.Print(fmt.Sprintf("<block %s>", expr.(Blockdef).Name))
 		case AsError:
 			switch expr.(AsError).err {
 				case NameError: fmt.Print("<error 'NameError'>")
@@ -1553,7 +1547,6 @@ func (scope *Scope) OpTypeOf(node AST) (*Error) {
 		case AsBool: TypeVal = "bool"
 		case AsType: TypeVal = "type"
 		case AsError: TypeVal = "error"
-		case Blockdef: TypeVal = "block"
 	}
 	expr := AsType {
 		TypeVal,
@@ -1618,26 +1611,6 @@ func (scope *Scope) OpVardef(name string, position NodePosition, VariableScope *
 
 func (scope *Scope) OpBlockdef(node AST) (*Error) {
 	Variables[node.(Blockdef).Name] = node
-	return nil
-}
-
-func (scope *Scope) OpCallBlock(name string, position NodePosition) *Error {
-	_, ok := Variables[name];
-	_, ok2 := Variables[name].(Blockdef);
-	if !ok {
-		err := Error{}
-		err.message = fmt.Sprintf("%s:NameError:%d:%d: undefined block `%s`.", position.FileName, position.Line, position.Column, name)
-		err.Type = NameError
-		return &err
-	}
-	if !ok2 {
-		err := Error{}
-		err.message = fmt.Sprintf("%s:TypeError:%d:%d: `call` expected type <block>.", position.FileName, position.Line, position.Column)
-		err.Type = TypeError
-		return &err
-	}
-	VariableScope := map[string]AST{}
-	scope.VisitorVisit(Variables[name].(Blockdef).BlockBody, false, &VariableScope)
 	return nil
 }
 
@@ -1740,8 +1713,6 @@ func (scope *Scope) VisitorVisit(node AST, IsTry bool, VariableScope *map[string
 				err = scope.OpVardef(node.(Vardef).Name, node.(Vardef).Position, VariableScope)
 			case Blockdef:
 				err = scope.OpBlockdef(node)
-			case CallBlock:
-				err = scope.OpCallBlock(node.(CallBlock).Name, node.(CallBlock).Position)
 			case Include:
 				err = scope.OpInclude(node.(Include).FileName, node.(Include).Position)
 			case Compare:
