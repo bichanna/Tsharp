@@ -1,10 +1,11 @@
 
-block Fib do -> n
-    if n 2 < do
-        n
+
+block Fib do -> N
+    if N 2 < do
+        N
     else
-        n 1 - call Fib
-        n 2 - call Fib
+        N 1 - call Fib
+        N 2 - call Fib
         +
     end
 end
