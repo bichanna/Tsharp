@@ -237,7 +237,8 @@ end
 `IndexError` When the indexes of arrays and strings are different.<br>
 `IncludeError` When you try to include an invalid file.<br>
 `NameError` When you use a variable that does not exist.<br>
-`AssertionError` Assertion<br>
+`AssertionError` Assertion.<br>
+`FileNotFoundError` file not found.<br>
 
 ## Assertion
 ```
