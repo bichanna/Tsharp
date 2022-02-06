@@ -700,8 +700,7 @@ func ParserParse(parser *Parser) AST {
 	}
 	for {
 		if parser.current_token_type == TOKEN_ID {
-			if parser.current_token_value == "print" || parser.current_token_value == "break" || parser.current_token_value == "append" || parser.current_token_value == "remove" || parser.current_token_value == "swap" || parser.current_token_value == "in" || parser.current_token_value == "typeof" || parser.current_token_value == "rot" || parser.current_token_value == "len" || parser.current_token_value == "input" ||
-			   parser.current_token_value == "drop"  || parser.current_token_value == "dup" || parser.current_token_value == "inc" || parser.current_token_value == "dec" || parser.current_token_value == "replace" || parser.current_token_value == "read" || parser.current_token_value == "println" || parser.current_token_value == "over" || parser.current_token_value == "printS" || parser.current_token_value == "exit" {
+			if parser.current_token_value == "print" || parser.current_token_value == "break" || parser.current_token_value == "append" || parser.current_token_value == "remove" || parser.current_token_value == "swap" || parser.current_token_value == "in" || parser.current_token_value == "typeof" || parser.current_token_value == "rot" || parser.current_token_value == "len" || parser.current_token_value == "input" || parser.current_token_value == "drop"  || parser.current_token_value == "dup" || parser.current_token_value == "inc" || parser.current_token_value == "dec" || parser.current_token_value == "replace" || parser.current_token_value == "read" || parser.current_token_value == "println" || parser.current_token_value == "over" || parser.current_token_value == "printS" || parser.current_token_value == "exit" || parser.current_token_value == "free" {
 				name := parser.current_token_value
 				position := RetNodePosition(parser)
 				IdExpr := AsId{
@@ -1689,6 +1688,10 @@ func (scope *Scope) OpInput() {
 	scope.OpPush(StrExpr, nil)
 }
 
+func (scope *Scope) OpFree() {
+	scope.Stack = scope.Stack[:0]
+}
+
 // -----------------------------
 // --------- Visitor -----------
 // -----------------------------
@@ -1722,6 +1725,7 @@ func (scope *Scope) VisitorVisit(node AST, IsTry bool, VariableScope *map[string
 					case "over": err = scope.OpOver(node)
 					case "exit": os.Exit(0)
 					case "input": scope.OpInput()
+					case "free": scope.OpFree()
 					default: panic("unreachable")
 				}
 			case AsBinop:
