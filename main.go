@@ -1624,10 +1624,16 @@ func (scope *Scope) OpBlockdef(node AST) (*Error) {
 func (scope *Scope) OpCallBlock(name string, position NodePosition) *Error {
 	_, ok := Variables[name];
 	_, ok2 := Variables[name].(Blockdef);
-	if !ok || !ok2 {
+	if !ok {
 		err := Error{}
 		err.message = fmt.Sprintf("%s:NameError:%d:%d: undefined block `%s`.", position.FileName, position.Line, position.Column, name)
 		err.Type = NameError
+		return &err
+	}
+	if !ok2 {
+		err := Error{}
+		err.message = fmt.Sprintf("%s:TypeError:%d:%d: `call` expected type <block>.", position.FileName, position.Line, position.Column)
+		err.Type = TypeError
 		return &err
 	}
 	VariableScope := map[string]AST{}
