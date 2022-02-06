@@ -1224,7 +1224,7 @@ func (scope *Scope) OpIf(node AST, IsTry bool, VariableScope *map[string]AST) (b
 
 func (scope *Scope) OpFor(node AST, IsTry bool, VariableScope *map[string]AST) (*Error) {
 	var BreakValue bool
-	for {
+	LOOP:
 		_, err, _ := scope.VisitorVisit(node.(For).ForOp, IsTry, VariableScope)
 		if err != nil {
 			return err
@@ -1253,7 +1253,7 @@ func (scope *Scope) OpFor(node AST, IsTry bool, VariableScope *map[string]AST) (
 		if BreakValue {
 			return nil
 		}
-	}
+	goto LOOP
 	return nil
 }
 
