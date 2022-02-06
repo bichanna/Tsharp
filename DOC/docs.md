@@ -30,11 +30,12 @@ $ ./main.exe examples/main.tsp
 | `drop` | ` a --  ` | drops the top element of the stack. |
 | `swap` | `a b -- b a` | swap 2 elements on the top of the stack. |
 | `print` | `a -- ` | print the element on top of the stack and remove it from the stack. |
-| `println` | `a -- ` | `print` that has new line |
+| `println` | `a -- ` | `print` with a new line. |
 | `rot` | ` a b c -- b c a ` | rotate the top three stack elements. |
 | `over` | ` a b -- a b a ` | duplicate the second value on the stack. |
-| `input` | ` -- <input value> ` | user input |
+| `input` | ` -- <input value> ` | user input. |
 | `exit` | ` -- ` | exit |
+| `free` | ` a b c -- ` | drop all elements of the stack. |
 
 ## Arithmetic Operators
 ```
