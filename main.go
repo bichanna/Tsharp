@@ -917,7 +917,7 @@ func (scope *Scope) OpPush(node AST, VariableScope *map[string]AST) (*Error) {
 			}
 		}
 		err := Error{}
-		err.message = fmt.Sprintf("%s:NameError:%d:%d: undefined variable `%s`", node.(Var).Position.FileName, node.(Var).Position.Line, node.(Var).Position.Column,node.(Var).Name)
+		err.message = fmt.Sprintf("%s:NameError:%d:%d: name `%s` is not defined.", node.(Var).Position.FileName, node.(Var).Position.Line, node.(Var).Position.Column,node.(Var).Name)
 		err.Type = NameError
 		return &err
 	} else {
