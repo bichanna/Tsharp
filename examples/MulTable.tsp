@@ -11,7 +11,7 @@ end
 
 1 for dup 10 < do
     1 for dup 10 < do
-        call dclone
+        dclone
         *
         if dup 10 < do
             " " print

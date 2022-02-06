@@ -12,16 +12,16 @@ block natural do
         0 for dup 10 < do
             dup -> j
             if i j < do
-                call whiteblock
+                whiteblock
             else
-                call blackblock
+                blackblock
             end
         inc end drop
         " \n" print
     inc end drop
 end
 
-call natural
+natural
 
 "\n" print
 
@@ -31,16 +31,16 @@ block horizonal do
         0 for dup 10 < do
             dup -> j
             if j 2 % 0 == do
-                call whiteblock
+                whiteblock
             else
-                call blackblock
+                blackblock
             end
         inc end drop
         " \n" print
     inc end drop
 end
 
-call horizonal
+horizonal
 
 "\n" print
 
@@ -50,16 +50,16 @@ block vertical do
         0 for dup 10 < do
             dup -> j
             if i 2 % 0 == do
-                call whiteblock
+                whiteblock
             else
-                call blackblock
+                blackblock
             end
         inc end drop
         " \n" print
     inc end drop
 end
 
-call vertical
+vertical
 
 "\n" print
 
@@ -69,16 +69,16 @@ block cross do
         0 for dup 10 < do
             dup -> j
             if i j + 2 % 0 == do
-                call whiteblock
+                whiteblock
             else
-                call blackblock
+                blackblock
             end
         inc end drop
         " \n" print
     inc end drop
 end
 
-call cross
+cross
 
 "\n" print
 
@@ -90,18 +90,18 @@ block triangle do
         0 for dup x < do
             dup -> j
             if j 1 + y i - < do
-                call whiteblock
+                whiteblock
             elif x j - y i - < do
-                call whiteblock
+                whiteblock
             else
-                call blackblock
+                blackblock
             end
         inc end drop
         " \n" print
     inc end drop
 end
 
-call triangle
+triangle
 
 "\n" print
 
@@ -113,15 +113,15 @@ block inversetriangle do
         0 for dup x < do
             dup -> j
             if j i < do
-                call whiteblock
+                whiteblock
             elif x j - i > do
-                call blackblock
+                blackblock
             else
-                call whiteblock
+                whiteblock
             end
         inc end drop
         " \n" print
     inc end drop
 end
 
-call inversetriangle
+inversetriangle
