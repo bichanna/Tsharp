@@ -183,8 +183,9 @@ By the way, this is how I write the loop process.
 { 1 2 3 4 5 6 7 8 9 10 } 0 read println
 
 # <list> <index> read
+# or
+# <string> <index> read
 ```
-`read` は `string` にも使えます。
 
 ### Replace
 ```
@@ -205,8 +206,9 @@ By the way, this is how I write the loop process.
 { 1 2 3 4 5 6 7 8 9 10 } len println
 
 # <list> len
+# or
+# <string> len
 ```
-You can also use `len` for `string`.
 
 ## File operations
 ```
