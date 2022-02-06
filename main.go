@@ -1,5 +1,17 @@
 package main
 
+
+/*
+
+Lexer (parse a list of characters and convert them to tokens.)
+↓
+Parser (converts a list of tokens into an AST)
+↓
+Visitor (visit AST node.)
+
+*/
+
+
 import (
 	"fmt"
 	"os"
