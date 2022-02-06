@@ -208,6 +208,19 @@ By the way, this is how I write the loop process.
 ```
 You can also use `len` for `string`.
 
+## File operations
+```
+"main.asm" fopen -> F
+
+"; Hello World!\n" F fwrite
+
+F read -> context
+
+context println
+
+F fclose
+```
+
 ## Error handling
 ```
 try
