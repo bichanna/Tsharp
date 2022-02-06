@@ -1078,25 +1078,36 @@ func (scope *Scope) OpCompare(op uint8, position NodePosition) (*Error) {
 }
 
 func PrintAsList(node AST) {
-	print("{")
+	fmt.Print("{")
 	for i := 0; i < len(node.(AsList).ListArgs); i++ {
 		switch node.(AsList).ListArgs[i].(type) {
 			case AsStr:
-				print(node.(AsList).ListArgs[i].(AsStr).StringValue)
+				fmt.Print(node.(AsList).ListArgs[i].(AsStr).StringValue)
 			case AsInt:
-				print(strconv.Itoa(node.(AsList).ListArgs[i].(AsInt).IntValue))
+				fmt.Print(strconv.Itoa(node.(AsList).ListArgs[i].(AsInt).IntValue))
 			case Blockdef:
-				print(fmt.Sprintf("<block %s at %p>", node.(Blockdef).Name, &node))
+				fmt.Print(fmt.Sprintf("<block %s>", node.(AsList).ListArgs[i].(Blockdef).Name))
 			case AsBool:
-				print(node.(AsList).ListArgs[i].(AsBool).BoolValue)
+				fmt.Print(node.(AsList).ListArgs[i].(AsBool).BoolValue)
+			case AsType:
+				fmt.Print(fmt.Sprintf("<%s>", node.(AsList).ListArgs[i].(AsType).TypeValue))
+			case AsError:
+				switch node.(AsList).ListArgs[i].(AsError).err {
+					case NameError: fmt.Print("<error 'NameError'>")
+					case StackUnderflowError: fmt.Print("<error 'StackUnderflowError'>")
+					case IncludeError: fmt.Print("<error 'IncludeError'>")
+					case IndexError: fmt.Print("<error 'IndexError'>")
+					case TypeError: fmt.Print("<error 'TypeError'>")
+					default: fmt.Print(fmt.Sprintf("unexpected error <%d>", node.(AsList).ListArgs[i].(AsError).err))
+				}
 			case AsList:
 				PrintAsList(node.(AsList).ListArgs[i])
 		}
 		if i < len(node.(AsList).ListArgs)-1 {
-			print(", ")
+			fmt.Print(", ")
 		}
 	}
-	print("}")
+	fmt.Print("}")
 }
 
 func (scope *Scope) OpPrintln(node AST) (*Error) {
@@ -1112,7 +1123,7 @@ func (scope *Scope) OpPrintln(node AST) (*Error) {
 		case AsInt: fmt.Println(expr.(AsInt).IntValue)
 		case AsBool: fmt.Println(expr.(AsBool).BoolValue)
 		case AsType: fmt.Println(fmt.Sprintf("<%s>" ,expr.(AsType).TypeValue))
-		case Blockdef: fmt.Print(fmt.Sprintf("<block %s at %p>", expr.(Blockdef).Name, &expr))
+		case Blockdef: fmt.Println(fmt.Sprintf("<block %s>", expr.(Blockdef).Name))
 		case AsError:
 			switch expr.(AsError).err {
 				case NameError: fmt.Println("<error 'NameError'>")
@@ -1143,7 +1154,7 @@ func (scope *Scope) OpPrint(node AST) (*Error) {
 		case AsInt: fmt.Print(expr.(AsInt).IntValue)
 		case AsBool: fmt.Print(expr.(AsBool).BoolValue)
 		case AsType: fmt.Print(fmt.Sprintf("<%s>" ,expr.(AsType).TypeValue))
-		case Blockdef: fmt.Print(fmt.Sprintf("<block %s at %p>", expr.(Blockdef).Name, &expr))
+		case Blockdef: fmt.Print(fmt.Sprintf("<block %s>", expr.(Blockdef).Name))
 		case AsError:
 			switch expr.(AsError).err {
 				case NameError: fmt.Print("<error 'NameError'>")
