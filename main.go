@@ -1707,14 +1707,7 @@ func (scope *Scope) OpFopen(node AST) (*Error) {
 		return &err
 	}
 
-	if _, err := os.Stat(FileName.(AsStr).StringValue); os.IsNotExist(err) {
-		err := Error{}
-		err.message = fmt.Sprintf("%s:FileNotFoundError:%d:%d: `fopen` invalid file name `%s`.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column, FileName.(AsStr).StringValue)
-		err.Type = FileNotFoundError
-		return &err
-	}
-
-	var file, err = os.OpenFile(FileName.(AsStr).StringValue, os.O_CREATE|os.O_RDWR|os.O_APPEND, os.ModeAppend)
+	var file, err = os.OpenFile(FileName.(AsStr).StringValue, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0755)
 
 	if err != nil {
 		err := Error{}
