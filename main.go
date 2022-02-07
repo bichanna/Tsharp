@@ -222,7 +222,10 @@ func (lexer *Lexer) Lex() (Position, Token, string, string) {
 							}
 							panic(err)
 						}
-						if r == '\n' {break}
+						if r == '\n' {
+							lexer.resetPosition()
+							break
+						}
 						if err != nil {panic(err)}
 						lexer.pos.column++
 					}
