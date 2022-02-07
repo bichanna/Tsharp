@@ -220,6 +220,8 @@ F fread -> context
 
 context println
 
+F ftruncate
+
 F fclose
 ```
 
