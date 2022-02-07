@@ -11,16 +11,16 @@ if exists("b:current_syntax")
 endif
 
 " Language keywords
-syntax keyword tsharpKeywords import block do end if elif else for try except break
+syntax keyword tsharpKeywords import block do end if elif else for try except break dup drop swap print println rot over input exit free isdigit assert
 
 " Type keywords
-syntax keyword tsharpType int string type bool list
+syntax keyword tsharpType int string type bool list error
 
 " Boolean keywords
 syntax keyword tsharpBoolean true false
 
 " Comments
-syntax region tsharpCommentLine start="//" end="$"   contains=tsharpTodos
+syntax region tsharpCommentLine start="#" end="$"   contains=tsharpTodos
            
 " Strings
 syntax region tsharpString start=/\v"/ skip=/\v\\./ end=/\v"/
