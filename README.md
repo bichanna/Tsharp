@@ -52,7 +52,7 @@ block main do
     end
 end
 
-call main
+main
 ```
 
 
