@@ -703,7 +703,8 @@ func ParserParse(parser *Parser) AST {
 	}
 	for {
 		if parser.current_token_type == TOKEN_ID {
-			if parser.current_token_value == "print" || parser.current_token_value == "break" || parser.current_token_value == "append" || parser.current_token_value == "remove" || parser.current_token_value == "swap" || parser.current_token_value == "in" || parser.current_token_value == "typeof" || parser.current_token_value == "rot" || parser.current_token_value == "len" || parser.current_token_value == "input" || parser.current_token_value == "drop"  || parser.current_token_value == "dup" || parser.current_token_value == "inc" || parser.current_token_value == "dec" || parser.current_token_value == "replace" || parser.current_token_value == "read" || parser.current_token_value == "println" || parser.current_token_value == "over" || parser.current_token_value == "printS" || parser.current_token_value == "exit" || parser.current_token_value == "free" || parser.current_token_value == "fopen" || parser.current_token_value == "fclose" || parser.current_token_value == "fwrite" || parser.current_token_value == "fread" || parser.current_token_value == "isdigit" {
+			// TODO: rewrite to switch...
+			if parser.current_token_value == "print" || parser.current_token_value == "break" || parser.current_token_value == "append" || parser.current_token_value == "remove" || parser.current_token_value == "swap" || parser.current_token_value == "in" || parser.current_token_value == "typeof" || parser.current_token_value == "rot" || parser.current_token_value == "len" || parser.current_token_value == "input" || parser.current_token_value == "drop"  || parser.current_token_value == "dup" || parser.current_token_value == "inc" || parser.current_token_value == "dec" || parser.current_token_value == "replace" || parser.current_token_value == "read" || parser.current_token_value == "println" || parser.current_token_value == "over" || parser.current_token_value == "printS" || parser.current_token_value == "exit" || parser.current_token_value == "free" || parser.current_token_value == "fopen" || parser.current_token_value == "fclose" || parser.current_token_value == "fwrite" || parser.current_token_value == "fread" || parser.current_token_value == "isdigit" || parser.current_token_value == "ftruncate" {
 				name := parser.current_token_value
 				position := RetNodePosition(parser)
 				IdExpr := AsId{
@@ -1707,7 +1708,7 @@ func (scope *Scope) OpFopen(node AST) (*Error) {
 		return &err
 	}
 
-	var file, err = os.OpenFile(FileName.(AsStr).StringValue, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0755)
+	var file, err = os.OpenFile(FileName.(AsStr).StringValue, os.O_CREATE|os.O_RDWR, 0755)
 
 	if err != nil {
 		err := Error{}
@@ -1824,6 +1825,36 @@ func (scope *Scope) OpFread(node AST) (*Error) {
 	return nil
 }
 
+func (scope *Scope) OpFtruncate(node AST) (*Error) {
+	if len(scope.Stack) < 1 {
+		err := Error{}
+		err.message = fmt.Sprintf("%s:StackUnderflowError:%d:%d: `ftruncate` expected at least one <string> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = StackUnderflowError
+		return &err
+	}
+
+	File := scope.Stack[len(scope.Stack)-1]
+	scope.Stack = scope.Stack[:len(scope.Stack)-1]
+
+	if _, ok := File.(AsFile); !ok {
+		err := Error{}
+		err.message = fmt.Sprintf("%s:TypeError:%d:%d: `ftruncate` expected <file> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = TypeError
+		return &err
+	}
+
+	err := os.Truncate(File.(AsFile).FileName, 200)
+
+	if err != nil {
+		err := Error{}
+		err.message = fmt.Sprintf("%s:FileNotFoundError:%d:%d: `fopen` invalid file name `%s`.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column, File.(AsStr).StringValue)
+		err.Type = FileNotFoundError
+		return &err
+	}
+
+	return nil
+}
+
 func (scope *Scope) OpIsdigit(node AST) (*Error) {
 	if len(scope.Stack) < 1 {
 		err := Error{}
@@ -1901,6 +1932,7 @@ func (scope *Scope) VisitorVisit(node AST, IsTry bool, VariableScope *map[string
 					case "fwrite": err = scope.OpFwrite(node)
 					case "fclose": err = scope.OpFclose(node)
 					case "fread": err = scope.OpFread(node)
+					case "ftruncate": err = scope.OpFtruncate(node)
 					case "isdigit": err = scope.OpIsdigit(node)
 					default: panic("unreachable")
 				}
