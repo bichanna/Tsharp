@@ -37,6 +37,7 @@ $ ./main.exe examples/main.tsp
 | `exit` | ` -- ` | exit |
 | `free` | ` a b c -- ` | drop all elements of the stack. |
 | `isdigit` | ` <string value> -- <bool value> ` | check the top string type element is digit. push the bool value. |
+| `atoi` | ` <string value> -- <int value>` | same as Atoi in C language. |
 
 ## Arithmetic Operators
 ```
