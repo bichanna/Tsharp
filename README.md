@@ -59,6 +59,7 @@ main
 # Sudoku Solver
 
 Sudoku solver in T#
+
 https://github.com/Tsharp-lang/SudokuSolver
 
 <img width="1230" alt="Screen Shot 2022-02-13 at 13 18 13" src="https://user-images.githubusercontent.com/81926489/153741735-aac281fc-1b5d-4608-bca3-3745b1ff3dc6.png">
@@ -66,6 +67,7 @@ https://github.com/Tsharp-lang/SudokuSolver
 # Tic Tac Toe
 
 tic tac toe written in T#
+
 https://github.com/Tsharp-lang/tictactoe
 
 ![tictactoe](https://user-images.githubusercontent.com/81926489/150774403-dafdb578-ca0d-497a-b123-dcd1639654e8.gif)
