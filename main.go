@@ -245,7 +245,7 @@ func (lexer *Lexer) Lex() (Position, Token, string, string) {
 						return startPos, TOKEN_DO, val, lexer.FileName
 					} else if val == "true" || val == "false" {
 						return startPos, TOKEN_BOOL, val, lexer.FileName
-					} else if val == "string" || val == "int" || val == "bool" || val == "type" || val == "list" || val == "error" {
+					} else if val == "string" || val == "int" || val == "bool" || val == "type" || val == "list" || val == "error" || val == "byte" {
 						return startPos, TOKEN_TYPE, val, lexer.FileName
 					} else if val == "else" {
 						return startPos, TOKEN_ELSE, val, lexer.FileName
@@ -465,6 +465,12 @@ type AsId struct {
 }
 
 func (node AsId) node() {}
+
+type AsByte struct {
+	ByteValue byte
+}
+
+func (node AsByte) node() {}
 
 type Include struct {
 	FileName string
@@ -707,7 +713,7 @@ func ParserParse(parser *Parser) AST {
 	for {
 		if parser.current_token_type == TOKEN_ID {
 			// TODO: rewrite to switch...
-			if parser.current_token_value == "print" || parser.current_token_value == "break" || parser.current_token_value == "append" || parser.current_token_value == "remove" || parser.current_token_value == "swap" || parser.current_token_value == "in" || parser.current_token_value == "typeof" || parser.current_token_value == "rot" || parser.current_token_value == "len" || parser.current_token_value == "input" || parser.current_token_value == "drop"  || parser.current_token_value == "dup" || parser.current_token_value == "inc" || parser.current_token_value == "dec" || parser.current_token_value == "replace" || parser.current_token_value == "read" || parser.current_token_value == "println" || parser.current_token_value == "over" || parser.current_token_value == "printS" || parser.current_token_value == "exit" || parser.current_token_value == "free" || parser.current_token_value == "fopen" || parser.current_token_value == "fclose" || parser.current_token_value == "fwrite" || parser.current_token_value == "fread" || parser.current_token_value == "isdigit" || parser.current_token_value == "ftruncate" || parser.current_token_value == "atoi" || parser.current_token_value == "itoa" {
+			if parser.current_token_value == "print" || parser.current_token_value == "break" || parser.current_token_value == "append" || parser.current_token_value == "remove" || parser.current_token_value == "swap" || parser.current_token_value == "in" || parser.current_token_value == "typeof" || parser.current_token_value == "rot" || parser.current_token_value == "len" || parser.current_token_value == "input" || parser.current_token_value == "drop"  || parser.current_token_value == "dup" || parser.current_token_value == "inc" || parser.current_token_value == "dec" || parser.current_token_value == "replace" || parser.current_token_value == "read" || parser.current_token_value == "println" || parser.current_token_value == "over" || parser.current_token_value == "printS" || parser.current_token_value == "exit" || parser.current_token_value == "free" || parser.current_token_value == "fopen" || parser.current_token_value == "fclose" || parser.current_token_value == "fwrite" || parser.current_token_value == "fread" || parser.current_token_value == "isdigit" || parser.current_token_value == "ftruncate" || parser.current_token_value == "atoi" || parser.current_token_value == "itoa" || parser.current_token_value == "tobyte" {
 				name := parser.current_token_value
 				position := RetNodePosition(parser)
 				IdExpr := AsId{
@@ -1102,6 +1108,8 @@ func PrintAsList(node AST) {
 				fmt.Print(fmt.Sprintf("<%s>", node.(AsList).ListArgs[i].(AsType).TypeValue))
 			case AsFile:
 				fmt.Print(fmt.Sprintf("<file %s>", node.(AsList).ListArgs[i].(AsFile).FileName))
+			case AsByte:
+				fmt.Print(node.(AsList).ListArgs[i].(AsByte).ByteValue)
 			case AsError:
 				switch node.(AsList).ListArgs[i].(AsError).err {
 					case NameError: fmt.Print("<error 'NameError'>")
@@ -1136,6 +1144,7 @@ func (scope *Scope) OpPrintln(node AST) (*Error) {
 		case AsBool: fmt.Println(expr.(AsBool).BoolValue)
 		case AsType: fmt.Println(fmt.Sprintf("<%s>" ,expr.(AsType).TypeValue))
 		case AsFile: fmt.Println(fmt.Sprintf("<file %s>", expr.(AsFile).FileName))
+		case AsByte: fmt.Println(expr.(AsByte).ByteValue)
 		case AsError:
 			switch expr.(AsError).err {
 				case NameError: fmt.Println("<error 'NameError'>")
@@ -1168,6 +1177,7 @@ func (scope *Scope) OpPrint(node AST) (*Error) {
 		case AsBool: fmt.Print(expr.(AsBool).BoolValue)
 		case AsType: fmt.Print(fmt.Sprintf("<%s>", expr.(AsType).TypeValue))
 		case AsFile: fmt.Print(fmt.Sprintf("<file %s>", expr.(AsFile).FileName))
+		case AsByte: fmt.Print(expr.(AsByte).ByteValue)
 		case AsError:
 			switch expr.(AsError).err {
 				case NameError: fmt.Print("<error 'NameError'>")
@@ -1568,6 +1578,7 @@ func (scope *Scope) OpTypeOf(node AST) (*Error) {
 		case AsBool: TypeVal = "bool"
 		case AsType: TypeVal = "type"
 		case AsError: TypeVal = "error"
+		case AsByte: TypeVal = "byte"
 	}
 	expr := AsType {
 		TypeVal,
@@ -1950,6 +1961,28 @@ func (scope *Scope) OpItoa(node AST) (*Error) {
 	return nil
 }
 
+func (scope *Scope) OpTobyte(node AST)(*Error) {
+	if len(scope.Stack) < 1 {
+		err := Error{}
+		err.message = fmt.Sprintf("%s:StackUnderflowError:%d:%d: `tobyte` expected at least one <string> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = StackUnderflowError
+		return &err
+	}
+
+	StringValue := scope.Stack[len(scope.Stack)-1]
+	scope.Stack = scope.Stack[:len(scope.Stack)-1]
+
+	ByteArray := []byte(StringValue.(AsStr).StringValue)
+
+	NewScope := InitScope()
+
+	for i := 0; i < len(ByteArray); i++ {NewScope.Stack = append(NewScope.Stack, AsByte{ByteArray[i]})}
+
+	scope.Stack = append(scope.Stack, AsList {NewScope.Stack})
+
+	return nil
+}
+
 // -----------------------------
 // --------- Visitor -----------
 // -----------------------------
@@ -1992,6 +2025,7 @@ func (scope *Scope) VisitorVisit(node AST, IsTry bool, VariableScope *map[string
 					case "isdigit": err = scope.OpIsdigit(node)
 					case "atoi": err = scope.OpAtoi(node)
 					case "itoa": err = scope.OpItoa(node)
+					case "tobyte": err = scope.OpTobyte(node)
 					default: panic("unreachable")
 				}
 			case AsBinop:
