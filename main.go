@@ -707,7 +707,7 @@ func ParserParse(parser *Parser) AST {
 	for {
 		if parser.current_token_type == TOKEN_ID {
 			// TODO: rewrite to switch...
-			if parser.current_token_value == "print" || parser.current_token_value == "break" || parser.current_token_value == "append" || parser.current_token_value == "remove" || parser.current_token_value == "swap" || parser.current_token_value == "in" || parser.current_token_value == "typeof" || parser.current_token_value == "rot" || parser.current_token_value == "len" || parser.current_token_value == "input" || parser.current_token_value == "drop"  || parser.current_token_value == "dup" || parser.current_token_value == "inc" || parser.current_token_value == "dec" || parser.current_token_value == "replace" || parser.current_token_value == "read" || parser.current_token_value == "println" || parser.current_token_value == "over" || parser.current_token_value == "printS" || parser.current_token_value == "exit" || parser.current_token_value == "free" || parser.current_token_value == "fopen" || parser.current_token_value == "fclose" || parser.current_token_value == "fwrite" || parser.current_token_value == "fread" || parser.current_token_value == "isdigit" || parser.current_token_value == "ftruncate" || parser.current_token_value == "atoi" || parser.current_token_value == "itoa" || parser.current_token_value == "b" {
+			if parser.current_token_value == "print" || parser.current_token_value == "break" || parser.current_token_value == "append" || parser.current_token_value == "remove" || parser.current_token_value == "swap" || parser.current_token_value == "in" || parser.current_token_value == "typeof" || parser.current_token_value == "rot" || parser.current_token_value == "len" || parser.current_token_value == "input" || parser.current_token_value == "drop"  || parser.current_token_value == "dup" || parser.current_token_value == "inc" || parser.current_token_value == "dec" || parser.current_token_value == "replace" || parser.current_token_value == "read" || parser.current_token_value == "println" || parser.current_token_value == "over" || parser.current_token_value == "printS" || parser.current_token_value == "exit" || parser.current_token_value == "free" || parser.current_token_value == "fopen" || parser.current_token_value == "fclose" || parser.current_token_value == "fwrite" || parser.current_token_value == "fread" || parser.current_token_value == "isdigit" || parser.current_token_value == "ftruncate" || parser.current_token_value == "atoi" || parser.current_token_value == "itoa" || parser.current_token_value == "b" || parser.current_token_value == "uniquote" {
 				name := parser.current_token_value
 				position := RetNodePosition(parser)
 				IdExpr := AsId{
@@ -1987,6 +1987,32 @@ func (scope *Scope) OpBytes(node AST)(*Error) {
 	return nil
 }
 
+func (scope *Scope) OpUniquote(node AST) (*Error) {
+	if len(scope.Stack) < 1 {
+		err := Error{}
+		err.message = fmt.Sprintf("%s:StackUnderflowError:%d:%d: `uniquote` expected at least one <string> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = StackUnderflowError
+		return &err
+	}
+
+	StringValue := scope.Stack[len(scope.Stack)-1]
+
+	if _, ok := StringValue.(AsStr); !ok {
+		err := Error{}
+		err.message = fmt.Sprintf("%s:TypeError:%d:%d: `uniquote` expected <string> type element in the stack.", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = TypeError
+		return &err
+	}
+
+	scope.Stack = scope.Stack[:len(scope.Stack)-1]
+
+	val, _ := strconv.Unquote("\"" + StringValue.(AsStr).StringValue + "\"")
+
+	scope.Stack = append(scope.Stack, AsStr{val})
+
+	return nil
+}
+
 // -----------------------------
 // --------- Visitor -----------
 // -----------------------------
@@ -2030,6 +2056,7 @@ func (scope *Scope) VisitorVisit(node AST, IsTry bool, VariableScope *map[string
 					case "atoi": err = scope.OpAtoi(node)
 					case "itoa": err = scope.OpItoa(node)
 					case "b": err = scope.OpBytes(node)
+					case "uniquote": err = scope.OpUniquote(node)
 					default: panic("unreachable")
 				}
 			case AsBinop:
