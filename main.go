@@ -6,7 +6,7 @@ import (
 	"bufio"
 	"io"
 	"unicode"
-	"bytesgit "
+	"bytes"
 	"reflect"
 	"strconv"
 	"os/exec"
@@ -253,7 +253,7 @@ func (lexer *Lexer) Lex() (Position, Token, string, string) {
 						return startPos, TOKEN_ELSE, val, lexer.FileName
 					} else if val == "elif" {
 						return startPos, TOKEN_ELIF, val, lexer.FileName
-					} else if val == "NameError" || val == "StackUnderflowError" || val == "TypeError" || val == "IncludeError" || val == "IndexError" || val == "AssertionError" || val == "FileNotFoundError" {
+					} else if val == "NameError" || val == "StackUnderflowError" || val == "TypeError" || val == "IncludeError" || val == "IndexError" || val == "AssertionError" || val == "FileNotFoundError" || val == "CommandError" {
 						return startPos, TOKEN_ERROR, val, lexer.FileName
 					} else if val == "except" {
 						return startPos, TOKEN_EXCEPT, val, lexer.FileName
@@ -406,6 +406,7 @@ const (
 	IncludeError
 	AssertionError
 	FileNotFoundError
+	CommandError
 )
 
 type Error struct {
@@ -642,6 +643,8 @@ func ParserParseError(parser *Parser) AST {
 		err = AssertionError
 	} else if parser.current_token_value == "FileNotFoundError" {
 		err = FileNotFoundError
+	} else if parser.current_token_value == "CommandError" {
+		err = CommandError
 	}
 	parser.ParserEat(TOKEN_ERROR)
 	ErrorExpr := AsError {
@@ -2049,7 +2052,10 @@ func (scope *Scope) OpSystem(node AST) (*Error) {
 	err, out, _ := Shellout(StringValue.(AsStr).StringValue)
 
     if err != nil {
-        panic(err)
+        err := Error{}
+		err.message = fmt.Sprintf("%s:CommandError:%d:%d: `system` something whent wrong...", node.(AsId).Position.FileName, node.(AsId).Position.Line, node.(AsId).Position.Column)
+		err.Type = CommandError
+		return &err
     }
 
     fmt.Print(out)
