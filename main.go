@@ -2063,6 +2063,14 @@ func (scope *Scope) OpSystem(node AST) (*Error) {
 	return nil
 }
 
+func (scope *Scope) OpAgrv() {
+	NewScope := InitScope()
+	for i := 0; i < len(os.Args); i++ {
+		NewScope.OpPush(AsStr{os.Args[i]}, nil)
+	}
+	Variables["argv"] = AsList{NewScope.Stack}
+}
+
 // -----------------------------
 // --------- Visitor -----------
 // -----------------------------
@@ -2181,6 +2189,7 @@ func main() {
 	parser := ParserInit(lexer)
 	ast := ParserParse(parser)
 	scope := InitScope()
+	scope.OpAgrv()
 	scope.VisitorVisit(ast, false, nil)
 }
 
